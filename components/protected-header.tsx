@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Profiler } from "react";
 import { View, TouchableOpacity, Image } from "react-native";
 import { Text } from "@/components/ui/text";
 import { useRouter } from "expo-router";
@@ -14,8 +14,8 @@ export function ProtectedHeader() {
 	useEffect(() => {
 		async function fetchProfile() {
 			if (session?.user?.id) {
-				const profile = await getProfilePic(session.user.id);
-				setAvatarUrl(profile?.avatar_url || null);
+				const profilePic = await getProfilePic(session.user.id);
+				setAvatarUrl(profilePic);
 			}
 		}
 		fetchProfile();

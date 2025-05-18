@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Image, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Text } from "@/components/ui/text";
-import { uploadProfilePic } from "@/queries/profilepics";
+import { uploadProfilePic, getProfilePic } from "@/queries/profilepics";
 
 export function ProfilePicUploader({
 	userId,
@@ -12,6 +12,15 @@ export function ProfilePicUploader({
 }) {
 	const [uploading, setUploading] = useState(false);
 	const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+	// Fetch current profile pic on mount or when userId changes
+	useEffect(() => {
+		const fetchProfilePic = async () => {
+			const url = await getProfilePic(userId);
+			setAvatarUrl(url ?? null);
+		};
+		fetchProfilePic();
+	}, [userId]);
 
 	const handlePick = async () => {
 		setUploading(true);

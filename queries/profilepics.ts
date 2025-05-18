@@ -39,13 +39,11 @@ export async function uploadProfilePic(userId: string) {
 		return { error: "Error uploading image" };
 	}
 
-	// Get the public URL
 	const { data: publicUrlData } = supabase.storage
 		.from("profilepics")
 		.getPublicUrl(filePath);
 	const avatarUrl = publicUrlData.publicUrl;
 
-	console.log(avatarUrl);
 	const [profileUpdate, authUpdate] = await Promise.all([
 		supabase
 			.from("profiles")
@@ -55,8 +53,6 @@ export async function uploadProfilePic(userId: string) {
 			data: { avatar_url: avatarUrl },
 		}),
 	]);
-	console.log(userId);
-	console.log(profileUpdate);
 
 	if (profileUpdate.error || authUpdate.error) {
 		console.error(
@@ -81,6 +77,6 @@ export async function getProfilePic(userId: string) {
 		console.error("Error fetching profile picture:", error);
 		return null;
 	}
-
+	console.log("ok ", data.avatar_url);
 	return data.avatar_url;
 }
