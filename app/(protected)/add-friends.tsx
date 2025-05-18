@@ -71,7 +71,7 @@ export default function AddFriends() {
 						</TouchableOpacity>
 					</View>
 				)}
-				ListEmptyComponent={!loading && <Text>Nenhum usuário encontrado.</Text>}
+				// ListEmptyComponent={!loading && <Text>Nenhum usuário encontrado.</Text>}
 			/>
 		</View>
 	);

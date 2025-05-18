@@ -1,14 +1,14 @@
+import { decode } from "base64-arraybuffer";
 import { supabase } from "@/config/supabase";
 import * as ImagePicker from "expo-image-picker";
 
-// Upload a profile picture to Supabase Storage
 export async function uploadProfilePic(userId: string) {
 	const result = await ImagePicker.launchImageLibraryAsync({
-		mediaTypes: ImagePicker.MediaTypeOptions.Images,
+		mediaTypes: ["images", "livePhotos"],
 		allowsEditing: true,
 		aspect: [1, 1],
 		quality: 0.7,
-		base64: false,
+		base64: true,
 	});
 
 	if (result.canceled) {
@@ -16,14 +16,22 @@ export async function uploadProfilePic(userId: string) {
 	}
 
 	const file = result.assets[0];
-	const response = await fetch(file.uri);
-	const blob = await response.blob();
+	if (!file.base64) {
+		return { error: "No base64 data found" };
+	}
 
+	// Always use .jpg for simplicity
+	const filePath = `${userId}/${userId}.jpg`;
+
+	// Decode base64 to ArrayBuffer
+	const arrayBuffer = decode(file.base64);
+
+	// Upload to Supabase Storage
 	const { data, error } = await supabase.storage
-		.from("profile-pics")
-		.upload(`${userId}.jpg`, blob, {
+		.from("profilepics")
+		.upload(filePath, arrayBuffer, {
 			upsert: true,
-			contentType: "image/jpeg",
+			contentType: file.mimeType || "image/jpeg",
 		});
 
 	if (error) {
@@ -31,11 +39,13 @@ export async function uploadProfilePic(userId: string) {
 		return { error: "Error uploading image" };
 	}
 
+	// Get the public URL
 	const { data: publicUrlData } = supabase.storage
-		.from("profile-pics")
-		.getPublicUrl(`${userId}.jpg`);
+		.from("profilepics")
+		.getPublicUrl(filePath);
 	const avatarUrl = publicUrlData.publicUrl;
 
+	console.log(avatarUrl);
 	const [profileUpdate, authUpdate] = await Promise.all([
 		supabase
 			.from("profiles")
@@ -45,6 +55,8 @@ export async function uploadProfilePic(userId: string) {
 			data: { avatar_url: avatarUrl },
 		}),
 	]);
+	console.log(userId);
+	console.log(profileUpdate);
 
 	if (profileUpdate.error || authUpdate.error) {
 		console.error(
@@ -56,4 +68,19 @@ export async function uploadProfilePic(userId: string) {
 	}
 
 	return { avatarUrl };
+}
+
+export async function getProfilePic(userId: string) {
+	const { data, error } = await supabase
+		.from("profiles")
+		.select("avatar_url")
+		.eq("id", userId)
+		.single();
+
+	if (error) {
+		console.error("Error fetching profile picture:", error);
+		return null;
+	}
+
+	return data.avatar_url;
 }

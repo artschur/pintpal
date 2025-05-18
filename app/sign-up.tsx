@@ -1,7 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View, Alert } from "react-native";
 import * as z from "zod";
+import { useState } from "react";
+import { useRouter } from "expo-router";
 
 import { SafeAreaView } from "@/components/safe-area-view";
 import { Button } from "@/components/ui/button";
@@ -9,6 +11,7 @@ import { Form, FormField, FormInput } from "@/components/ui/form";
 import { Text } from "@/components/ui/text";
 import { H1 } from "@/components/ui/typography";
 import { useAuth } from "@/context/supabase-provider";
+import { ProfilePicUploader } from "@/components/profile-puc-uploader";
 
 const formSchema = z
 	.object({
@@ -40,6 +43,8 @@ const formSchema = z
 
 export default function SignUp() {
 	const { signUp } = useAuth();
+	const router = useRouter();
+	const [userId, setUserId] = useState<string | null>(null);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -55,9 +60,19 @@ export default function SignUp() {
 		try {
 			await signUp(data.email, data.password, data.username);
 
+			Alert.alert(
+				"Verifique seu email",
+				"Enviamos um link de verificação para seu email. Por favor, verifique antes de fazer login.",
+				[
+					{
+						text: "OK",
+						onPress: () => router.replace("/sign-in"),
+					},
+				],
+			);
 			form.reset();
 		} catch (error: Error | any) {
-			console.error(error.message);
+			Alert.alert("Erro", error.message || "Erro ao criar conta.");
 		}
 	}
 
@@ -124,6 +139,12 @@ export default function SignUp() {
 						/>
 					</View>
 				</Form>
+				{userId && (
+					<ProfilePicUploader
+						userId={userId}
+						onUploaded={() => Alert.alert("Foto de perfil atualizada!")}
+					/>
+				)}
 			</View>
 			<Button
 				size="default"
