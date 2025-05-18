@@ -6,7 +6,7 @@ import { Image } from "@/components/image";
 import { SafeAreaView } from "@/components/safe-area-view";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
-import { H1, Muted } from "@/components/ui/typography";
+import { H1, H2, H3, Muted } from "@/components/ui/typography";
 import { useColorScheme } from "@/lib/useColorScheme";
 
 export default function WelcomeScreen() {
@@ -14,17 +14,18 @@ export default function WelcomeScreen() {
 	const { colorScheme } = useColorScheme();
 	const appIcon =
 		colorScheme === "dark"
-			? require("@/assets/icon.png")
+			? require("@/assets/pintpal-cute-transparent.png")
 			: require("@/assets/icon-dark.png");
 
 	return (
 		<SafeAreaView className="flex flex-1 bg-background p-4">
 			<View className="flex flex-1 items-center justify-center gap-y-4 web:m-4">
-				<Image source={appIcon} className="w-16 h-16 rounded-xl" />
-				<H1 className="text-center">Welcome to Expo Supabase Starter</H1>
-				<Muted className="text-center">
-					A comprehensive starter project for developing React Native and Expo
-					applications with Supabase as the backend.
+				<Image source={appIcon} className="w-36 h-36 rounded-xl" />
+				<H1 className="text-center">Bem vindo ao PintPal 🍻</H1>
+				<H3 className="text-center">Somos um Bereal, só que para bebidas</H3>
+				<Muted className="text-center text-xl">Cultive bons hábitos.</Muted>
+				<Muted className="text-center text-xl">
+					Adicione seus amigos e veja quem bebe mais!
 				</Muted>
 			</View>
 			<View className="flex flex-col gap-y-4 web:m-4">
@@ -35,7 +36,7 @@ export default function WelcomeScreen() {
 						router.push("/sign-up");
 					}}
 				>
-					<Text>Sign Up</Text>
+					<Text>Criar conta</Text>
 				</Button>
 				<Button
 					size="default"
@@ -44,7 +45,7 @@ export default function WelcomeScreen() {
 						router.push("/sign-in");
 					}}
 				>
-					<Text>Sign In</Text>
+					<Text>Login</Text>
 				</Button>
 			</View>
 		</SafeAreaView>
