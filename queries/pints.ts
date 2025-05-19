@@ -14,6 +14,86 @@ export async function GetAllPints() {
 	return data;
 }
 
+export async function AddPintToStorage({
+	backImage,
+	frontImage,
+	user_id,
+}: {
+	backImage: string;
+	frontImage: string;
+	user_id: string;
+}): Promise<{ backImageUrl: string; frontImageUrl: string; error: any }> {
+	try {
+		const data = `${user_id}-${Date.now()}`;
+
+		// Convert base64 to Blob-like object for Supabase
+		const base64ToBuffer = async (base64String: string) => {
+			const base64Data = base64String.split(",")[1]; // Remove the data:image/jpeg;base64, prefix
+			const byteCharacters = atob(base64Data);
+			const byteArray = new Uint8Array(byteCharacters.length);
+
+			for (let i = 0; i < byteCharacters.length; i++) {
+				byteArray[i] = byteCharacters.charCodeAt(i);
+			}
+
+			return byteArray;
+		};
+
+		// Convert and upload both images in parallel
+		const [backBuffer, frontBuffer] = await Promise.all([
+			base64ToBuffer(backImage),
+			base64ToBuffer(frontImage),
+		]);
+
+		const [backData, frontData] = await Promise.all([
+			supabase.storage.from("pints").upload(`back/${data}`, backBuffer, {
+				contentType: "image/jpeg",
+			}),
+			supabase.storage.from("pints").upload(`front/${data}`, frontBuffer, {
+				contentType: "image/jpeg",
+			}),
+		]);
+
+		if (backData.error || frontData.error) {
+			console.error("Upload error:", backData.error || frontData.error);
+			return {
+				backImageUrl: "",
+				frontImageUrl: "",
+				error: backData.error || frontData.error,
+			};
+		}
+
+		// Get public URLs in parallel
+		try {
+			const [backPublicUrl, frontPublicUrl] = await Promise.all([
+				supabase.storage.from("pints").getPublicUrl(`back/${data}`).data
+					.publicUrl,
+				supabase.storage.from("pints").getPublicUrl(`front/${data}`).data
+					.publicUrl,
+			]);
+
+			return {
+				backImageUrl: backPublicUrl,
+				frontImageUrl: frontPublicUrl,
+				error: null,
+			};
+		} catch (urlError) {
+			console.error("Error getting public URLs:", urlError);
+			return {
+				backImageUrl: "",
+				frontImageUrl: "",
+				error: "Failed to generate public URLs",
+			};
+		}
+	} catch (error) {
+		console.error("Error in AddPintToStorage:", error);
+		return {
+			backImageUrl: "",
+			frontImageUrl: "",
+			error: "An unexpected error occurred",
+		};
+	}
+}
 export async function GetFriendsPints(userId: string, todayOnly: boolean) {
 	const { data: friends, error: friendsError } = await supabase
 		.from("friends")

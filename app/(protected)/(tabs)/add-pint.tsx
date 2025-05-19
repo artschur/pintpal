@@ -11,12 +11,13 @@ import {
 	View,
 	ScrollView,
 	ActivityIndicator,
+	Alert,
 } from "react-native";
 import { Image } from "expo-image";
 import { Text } from "@/components/ui/text";
 import { colors } from "@/constants/colors";
 import { useRouter } from "expo-router";
-import { CreatePost } from "@/queries/pints";
+import { AddPintToStorage, CreatePost } from "@/queries/pints";
 import { useAuth } from "@/context/supabase-provider";
 import { Picker } from "@react-native-picker/picker";
 import { MaterialIcons, FontAwesome6 } from "@expo/vector-icons";
@@ -44,6 +45,15 @@ export default function ShowPint() {
 	const [drinkType, setDrinkType] = useState(DRINK_TYPES[0]);
 	const [uploading, setUploading] = useState(false);
 
+	const resetState = () => {
+		setBackImage(null);
+		setFrontImage(null);
+		setFacing("back");
+		setQuantity(1);
+		setDrinkType(DRINK_TYPES[0]);
+		setUploading(false);
+	};
+
 	useEffect(() => {
 		(async () => {
 			const { status } = await Location.requestForegroundPermissionsAsync();
@@ -61,12 +71,19 @@ export default function ShowPint() {
 	}, []);
 
 	const takePicture = async () => {
-		const photo = await ref.current?.takePictureAsync();
-		if (facing === "back") {
-			setBackImage(photo?.uri ?? null);
-			setFacing("front");
-		} else {
-			setFrontImage(photo?.uri ?? null);
+		const photo = await ref.current?.takePictureAsync({
+			base64: true,
+			quality: 0.7, // Adjust quality to manage file size
+		});
+
+		if (photo) {
+			const base64Image = `data:image/jpeg;base64,${photo.base64}`;
+			if (facing === "back") {
+				setBackImage(base64Image);
+				setFacing("front");
+			} else {
+				setFrontImage(base64Image);
+			}
 		}
 	};
 
@@ -79,15 +96,36 @@ export default function ShowPint() {
 		setUploading(true);
 
 		try {
+			const { backImageUrl, frontImageUrl, error } = await AddPintToStorage({
+				backImage,
+				frontImage,
+				user_id: session.user.id,
+			});
+
+			if (error) {
+				console.error("Error uploading images:", error);
+				// Here you might want to show an error message to the user
+				// using your preferred notification system
+				return;
+			}
+
 			const post = await CreatePost({
 				userId: session.user.id,
 				description: `${quantity}x ${drinkType}`,
 				location,
-				imageUrl: `${backImage},${frontImage}`,
+				imageUrl: `${backImageUrl},${frontImageUrl}`,
 			});
 
 			if (post) {
-				router.back();
+				resetState();
+				Alert.alert("Success", "Your pint was shared successfully!", [
+					{
+						text: "Take Another",
+						onPress: () => {}, // State is already reset
+					},
+				]);
+			} else {
+				console.error("Failed to create post");
 			}
 		} catch (error) {
 			console.error("Error sharing pint:", error);
@@ -220,14 +258,16 @@ export default function ShowPint() {
 				</ScrollView>
 
 				<Pressable
-					style={[styles.shareButton, uploading && { opacity: 0.7 }]}
+					className="bg-yellow-400 flex flex-row items-center rounded-lg p-4 mt-4"
 					onPress={handleShare}
 					disabled={uploading}
 				>
 					{uploading ? (
 						<ActivityIndicator color={colors.dark.background} />
 					) : (
-						<Text style={styles.shareButtonText}>Share Pint</Text>
+						<Text className="text-yellow-950 font-bold text-xl text-right">
+							Adicionar Bebida 🍻
+						</Text>
 					)}
 				</Pressable>
 			</View>
@@ -362,13 +402,7 @@ const styles = StyleSheet.create({
 		color: colors.dark.foreground,
 		fontSize: 16,
 	},
-	shareButton: {
-		backgroundColor: colors.dark.accent,
-		padding: 15,
-		borderRadius: 8,
-		alignItems: "center",
-		marginTop: 20,
-	},
+
 	shareButtonText: {
 		color: colors.dark.background,
 		fontSize: 16,

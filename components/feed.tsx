@@ -5,7 +5,6 @@ import { GetAllPints } from "@/queries/pints";
 import { PintPost } from "./post";
 import { Text } from "@/components/ui/text";
 import { colors } from "@/constants/colors";
-import { AddPintButton } from "./add-pint";
 
 export function Feed() {
 	const [posts, setPosts] = useState<any[]>([]);
