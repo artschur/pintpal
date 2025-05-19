@@ -33,7 +33,7 @@ export function ProtectedHeader() {
 				backgroundColor: "#000",
 			}}
 		>
-			<Text style={{ fontSize: 22, fontWeight: "bold" }}>PintPal</Text>
+			<Text style={{ fontSize: 22, fontWeight: "bold" }}>BeerBro</Text>
 			<TouchableOpacity onPress={() => router.push("/(protected)/profile-pic")}>
 				<Image
 					source={{

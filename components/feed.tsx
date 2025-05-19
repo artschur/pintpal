@@ -5,6 +5,7 @@ import { GetAllPints } from "@/queries/pints";
 import { PintPost } from "./post";
 import { Text } from "@/components/ui/text";
 import { colors } from "@/constants/colors";
+import { AddPintButton } from "./add-pint";
 
 export function Feed() {
 	const [posts, setPosts] = useState<any[]>([]);
@@ -34,15 +35,12 @@ export function Feed() {
 			</View>
 		);
 	}
-
 	return (
 		<FlatList
 			data={posts}
 			keyExtractor={(item) => item.id}
 			renderItem={({ item }) => {
-				// Split the imageUrl into front and back images
 				const [backImage, frontImage] = item.image_url.split(",");
-
 				return (
 					<PintPost
 						frontImage={frontImage}
@@ -63,7 +61,10 @@ export function Feed() {
 			}
 			contentContainerStyle={{
 				padding: 16,
+			}}
+			style={{
 				backgroundColor: colors.dark.background,
+				flex: 1,
 			}}
 		/>
 	);

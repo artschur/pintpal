@@ -21,7 +21,7 @@ export default function WelcomeScreen() {
 		<SafeAreaView className="flex flex-1 bg-background p-4">
 			<View className="flex flex-1 items-center justify-center gap-y-4 web:m-4">
 				<Image source={appIcon} className="w-36 h-36 rounded-xl" />
-				<H1 className="text-center">Bem vindo ao PintPal 🍻</H1>
+				<H1 className="text-center">Bem vindo ao BeerBro 🍻</H1>
 				<H3 className="text-center">Somos um Bereal, só que para bebidas</H3>
 				<Muted className="text-center text-xl">Cultive bons hábitos.</Muted>
 				<Muted className="text-center text-xl">

@@ -1,10 +1,11 @@
+// components/add-pint.tsx
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { View, ActivityIndicator, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { hasUploadedPintToday } from "@/queries/pints";
 import { useAuth } from "@/context/supabase-provider";
-import { ActivityIndicator } from "react-native";
 import { Text } from "./ui/text";
+import { colors } from "@/constants/colors";
 
 export function AddPintButton() {
 	const { session } = useAuth();
@@ -24,16 +25,36 @@ export function AddPintButton() {
 		check();
 	}, [session?.user?.id]);
 
-	if (loading) return <ActivityIndicator />;
+	if (loading) {
+		return (
+			<View style={{ padding: 12, alignItems: "center" }}>
+				<ActivityIndicator color={colors.dark.accent} />
+			</View>
+		);
+	}
+
 	if (hasUploaded) return null;
 
 	return (
-		<Button
-			className="w-full my-4 text-black"
-			size="default"
+		<TouchableOpacity
+			style={{
+				backgroundColor: colors.dark.accent,
+				padding: 16,
+				borderRadius: 8,
+				alignItems: "center",
+				marginVertical: 8,
+			}}
 			onPress={() => router.push("/(protected)/show-pint")}
 		>
-			<Text>Adicionar Pint</Text>
-		</Button>
+			<Text
+				style={{
+					color: colors.dark.background,
+					fontSize: 16,
+					fontWeight: "bold",
+				}}
+			>
+				Adicionar Pint
+			</Text>
+		</TouchableOpacity>
 	);
 }
