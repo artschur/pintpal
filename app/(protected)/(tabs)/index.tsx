@@ -3,6 +3,8 @@ import { View, SafeAreaView } from "react-native";
 import { Feed } from "@/components/feed";
 import { colors } from "@/constants/colors";
 import { AddPintButton } from "@/components/add-pint";
+import { useEffect } from "react";
+import GroupFeed from "@/components/groups-feed";
 
 export default function Home() {
 	return (
@@ -22,7 +24,7 @@ export default function Home() {
 
 				{/* Feed container */}
 				<View style={{ flex: 1 }}>
-					<Feed />
+					<GroupFeed />
 				</View>
 			</SafeAreaView>
 		</View>

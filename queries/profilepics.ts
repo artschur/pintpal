@@ -77,6 +77,5 @@ export async function getProfilePic(userId: string) {
 		console.error("Error fetching profile picture:", error);
 		return null;
 	}
-	console.log("ok ", data.avatar_url);
 	return data.avatar_url;
 }
