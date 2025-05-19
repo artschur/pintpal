@@ -2,7 +2,7 @@ import { supabase } from "@/config/supabase";
 
 export async function GetAllPints() {
 	const { data, error } = await supabase
-		.from("pints")
+		.from("posts")
 		.select("*")
 		.order("created_at", { ascending: false });
 
@@ -30,7 +30,7 @@ export async function GetFriendsPints(userId: string, todayOnly: boolean) {
 
 	if (friendIds.length === 0) return [];
 
-	const query = supabase.from("pints").select("*").in("user_id", friendIds);
+	const query = supabase.from("posts").select("*").in("user_id", friendIds);
 
 	if (todayOnly) {
 		const today = new Date();
@@ -59,6 +59,35 @@ export async function GetFriendsPints(userId: string, todayOnly: boolean) {
 	return posts;
 }
 
+export async function hasUploadedPintToday(userId: string) {
+	const today = new Date();
+	const startOfDay = new Date(
+		today.getFullYear(),
+		today.getMonth(),
+		today.getDate(),
+	).toISOString();
+	const endOfDay = new Date(
+		today.getFullYear(),
+		today.getMonth(),
+		today.getDate() + 1,
+	).toISOString();
+
+	const { data, error } = await supabase
+		.from("posts")
+		.select("id")
+		.eq("user_id", userId)
+		.gte("created_at", startOfDay)
+		.lt("created_at", endOfDay)
+		.limit(1);
+
+	if (error) {
+		console.error("Error checking today's pint:", error);
+		return false;
+	}
+
+	return data && data.length > 0;
+}
+
 export async function CreatePost({
 	userId,
 	description,
@@ -71,7 +100,7 @@ export async function CreatePost({
 	imageUrl: string;
 }) {
 	const { data, error } = await supabase
-		.from("pints")
+		.from("posts")
 		.insert([
 			{
 				user_id: userId,
