@@ -8,7 +8,7 @@ type Group = {
 	created_at?: string;
 };
 
-type GroupMember = {
+export type GroupMember = {
 	id: string;
 	group_id: string;
 	profile_id: string;
@@ -27,7 +27,7 @@ export interface GroupWithMembers extends Group {
 	members: (GroupMember & { profiles: Profile })[];
 }
 
-interface GroupMemberWithProfile extends GroupMember {
+export interface GroupMemberWithProfile extends GroupMember {
 	profiles: Profile;
 }
 
@@ -184,6 +184,17 @@ export async function addPointsToUser(
 		profile_id_input: profileId,
 		increment_by: pointsToAdd,
 	});
+
+	if (error) throw error;
+	return data;
+}
+
+export async function getGroupById(groupId: string) {
+	const { data, error } = await supabase
+		.from("groups")
+		.select("*")
+		.eq("id", groupId)
+		.single();
 
 	if (error) throw error;
 	return data;

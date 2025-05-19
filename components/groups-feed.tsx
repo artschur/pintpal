@@ -1,3 +1,4 @@
+// components/groups-feed.tsx
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -17,70 +18,72 @@ import {
 import { Group } from "./group";
 import { BlurView } from "expo-blur";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 export const dayBasedMessages = {
 	domingo: [
-		"domingo: o dia em que até jesus beberia.",
-		"domingo: seu fígado pediu pra avisar que não é indestrutível.",
-		"domingo: o único dia em que 'tomar café da manhã' pode incluir vodka.",
-		"domingo: porque amanhã é segunda, e isso já é motivo suficiente.",
-		"domingo: o dia oficial do 'eu não ia beber, mas...'",
-		"domingo: ressaca? que ressaca? isso é só o aquecimento.",
+		"domingo, o dia em que até jesus beberia.",
+		"domingo, seu fígado pediu pra avisar que não é indestrutível.",
+		"domingo, o único dia em que 'tomar café da manhã' pode incluir vodka.",
+		"domingo, porque amanhã é segunda, e isso já é motivo suficiente.",
+		"domingo, o dia oficial do 'eu não ia beber, mas...'",
+		"domingo, ressaca? que ressaca? isso é só o aquecimento.",
 	],
 	"segunda-feira": [
-		"segunda: o dia que o álcool foi inventado pra suportar.",
-		"segunda: quando até seu café pede uma dose de whisky.",
-		"segunda: o dia perfeito para começar a beber... às 8 da manhã.",
-		"segunda: porque sobriedade é superestimada.",
-		"segunda: o único dia em que 'é 5 da tarde em algum lugar' começa às 9 da manhã.",
-		"segunda: nada como uma ressaca para esquecer que é segunda.",
+		"segunda, o dia que o álcool foi inventado pra suportar.",
+		"segunda, quando até seu café pede uma dose de whisky.",
+		"segunda, o dia perfeito para começar a beber... às 8 da manhã.",
+		"segunda, porque sobriedade é superestimada.",
+		"segunda, o único dia em que 'é 5 da tarde em algum lugar' começa às 9 da manhã.",
+		"segunda, nada como uma ressaca para esquecer que é segunda.",
 	],
 	"terça-feira": [
-		"terça: o dia em que seu fígado ainda está processando o fim de semana.",
-		"terça: quando 'só uma cervejinha' vira terapia de grupo.",
-		"terça: o dia perfeito para descobrir novos drinks. por necessidade.",
-		"terça: porque dois dias sóbrio já é demais.",
-		"terça: seu corpo diz água, seu coração diz vodka.",
-		"terça: o dia em que 'moderação' vira palavrão.",
+		"terça, o dia em que seu fígado ainda está processando o fim de semana.",
+		"terça, quando 'só uma cervejinha' vira terapia de grupo.",
+		"terça, o dia perfeito para descobrir novos drinks. por necessidade.",
+		"terça, porque dois dias sóbrio já é demais.",
+		"terça, seu corpo diz água, seu coração diz vodka.",
+		"terça, o dia em que 'moderação' vira palavrão.",
 	],
 	"quarta-feita": [
-		"quarta: o dia em que seu fígado pergunta 'sério mesmo?'",
-		"quarta: metade da semana, dobro da vontade de beber.",
-		"quarta: o dia oficial do 'só um drink para aguentar até sexta'.",
-		"quarta: quando a garrafa te entende melhor que seu terapeuta.",
-		"quarta: porque três dias sem bebida seria um recorde desnecessário.",
-		"quarta: o dia em que 'happy hour' começa depois do almoço.",
+		"quarta, o dia em que seu fígado pergunta 'sério mesmo?'",
+		"quarta, metade da semana, dobro da vontade de beber.",
+		"quarta, o dia oficial do 'só um drink para aguentar até sexta'.",
+		"quarta, quando a garrafa te entende melhor que seu terapeuta.",
+		"quarta, porque três dias sem bebida seria um recorde desnecessário.",
+		"quarta, o dia em que 'happy hour' começa depois do almoço.",
 	],
 	"quinta-feira": [
-		"quinta: sexta júnior. seu fígado já está aquecendo.",
-		"quinta: o dia em que 'só uma' é a maior mentira que você conta.",
-		"quinta: oficialmente, o início do fim (do seu fígado).",
-		"quinta: porque esperar até sexta é coisa de amador.",
-		"quinta: quando seu corpo pede água mas sua alma grita tequila.",
-		"quinta: o dia em que 'beber com moderação' vira piada interna.",
+		"quinta, sexta júnior. seu fígado já está aquecendo.",
+		"quinta, o dia em que 'só uma' é a maior mentira que você conta.",
+		"quinta, oficialmente, o início do fim (do seu fígado).",
+		"quinta, porque esperar até sexta é coisa de amador.",
+		"quinta, quando seu corpo pede água mas sua alma grita tequila.",
+		"quinta, o dia em que 'beber com moderação' vira piada interna.",
 	],
 	"sexta-feira": [
-		"sexta: seu fígado já ligou pedindo férias.",
-		"sexta: o dia em que 'só vou tomar uma' é a piada do século.",
-		"sexta: quando seu corpo já sabe que vai se arrepender, mas sua mente diz 'foda-se'.",
-		"sexta: porque cinco dias sóbrio é castigo demais.",
-		"sexta: o dia em que até seu uber já sabe seu endereço de bar favorito.",
-		"sexta: seu corpo: 'por favor, não'. você: 'observe.'",
+		"sexta, seu fígado já ligou pedindo férias.",
+		"sexta, o dia em que 'só vou tomar uma' é a piada do século.",
+		"sexta, quando seu corpo já sabe que vai se arrepender, mas sua mente diz 'foda-se'.",
+		"sexta, porque cinco dias sóbrio é castigo demais.",
+		"sexta, o dia em que até seu uber já sabe seu endereço de bar favorito.",
+		"sexta, seu corpo: 'por favor, não'. você: 'observe.'",
 	],
 	sábado: [
-		"sábado: o dia em que seu fígado oficialmente desiste de você.",
-		"sábado: criando histórias que você vai negar ter vivido.",
-		"sábado: quando 'só mais uma' significa 'me carregue para casa'.",
-		"sábado: seu corpo implora por água, mas sua alma exige tequila.",
-		"sábado: o dia em que suas decisões são diretamente proporcionais ao seu nível de álcool.",
-		"sábado: porque domingo é o dia de se arrepender, não hoje.",
+		"sábado, o dia em que seu fígado oficialmente desiste de você.",
+		"sábado, criando histórias que você vai negar ter vivido.",
+		"sábado, quando 'só mais uma' significa 'me carregue para casa'.",
+		"sábado, seu corpo implora por água, mas sua alma exige tequila.",
+		"sábado, o dia em que suas decisões são diretamente proporcionais ao seu nível de álcool.",
+		"sábado, porque domingo é o dia de se arrepender, não hoje.",
 	],
 };
+
 function getRandomMessage(day: string): string {
 	const messages = dayBasedMessages[day as keyof typeof dayBasedMessages] || [
-		"mais uma desculpa para beber demais.",
+		"Aproveite o dia!",
 	];
-	return messages[Math.floor(Math.random() * messages.length)].toLowerCase();
+	return messages[Math.floor(Math.random() * messages.length)];
 }
 
 export default function GroupFeed() {
@@ -90,6 +93,7 @@ export default function GroupFeed() {
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
 	const [dayMessage, setDayMessage] = useState("");
+	const router = useRouter();
 
 	const fetchGroups = async () => {
 		if (!session?.user.id) {
@@ -121,7 +125,6 @@ export default function GroupFeed() {
 
 		const today = new Date();
 		const dayOfWeek = today.toLocaleDateString("pt-BR", { weekday: "long" });
-		console.log(dayOfWeek);
 		setDayMessage(getRandomMessage(dayOfWeek));
 	}, [session?.user?.id]);
 
@@ -132,7 +135,7 @@ export default function GroupFeed() {
 
 	const handleGroupPress = (group: GroupWithMembers) => {
 		// Navigate to group details
-		console.log("Group pressed:", group.name);
+		router.push(`/group/${group.id}`);
 	};
 
 	const handleJoinGroup = (group: GroupWithMembers) => {
@@ -167,8 +170,8 @@ export default function GroupFeed() {
 			}
 		>
 			{/* Day-Based Message */}
-			<View className="px-4 py-4">
-				<Text className="text-white text-3xl font-bold ">{dayMessage}</Text>
+			<View className="px-4 pt-4">
+				<Text className="text-white text-xl font-bold">{dayMessage}</Text>
 			</View>
 
 			{/* User's Groups Section - 2 Column Grid */}
@@ -178,8 +181,8 @@ export default function GroupFeed() {
 						<MaterialIcons name="group" size={24} color="#FFFFFF" />
 						<Text className="text-white text-xl font-bold ml-2">Seus Bros</Text>
 					</View>
-					<Pressable>
-						<Text className="text-yellow-500">See All</Text>
+					<Pressable onPress={() => router.push("/create-group")}>
+						<Text className="text-yellow-500">Create Group</Text>
 					</Pressable>
 				</View>
 
