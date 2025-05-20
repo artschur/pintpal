@@ -178,8 +178,9 @@ export default function GroupFeed() {
 			<View className="px-4 mb-6 mt-4">
 				<View className="flex-row items-center justify-between mb-4">
 					<View className="flex-row items-center">
-						<MaterialIcons name="group" size={24} color="#FFFFFF" />
-						<Text className="text-white text-xl font-bold ml-2">Seus Bros</Text>
+						<Text className="text-white text-xl font-bold ml-2">
+							🍻 seus bros
+						</Text>
 					</View>
 					<Pressable onPress={() => router.push("/create-group")}>
 						<Text className="text-yellow-500">Create Group</Text>
@@ -216,9 +217,8 @@ export default function GroupFeed() {
 			<View className="px-4 mb-6">
 				<View className="flex-row items-center justify-between mb-4">
 					<View className="flex-row items-center">
-						<MaterialIcons name="explore" size={24} color="#FFFFFF" />
 						<Text className="text-white text-xl font-bold ml-2">
-							Descobrir Grupos
+							🌎 descobrir grupos
 						</Text>
 					</View>
 					<Pressable>

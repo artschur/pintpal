@@ -1,17 +1,16 @@
-import {
-	CameraMode,
-	CameraType,
-	CameraView,
-	useCameraPermissions,
-} from "expo-camera";
+"use client";
+
+import { CameraView, type CameraType, useCameraPermissions } from "expo-camera";
 import { useRef, useState, useEffect } from "react";
 import {
 	StyleSheet,
 	Pressable,
 	View,
-	ScrollView,
 	ActivityIndicator,
 	Alert,
+	TouchableOpacity,
+	Modal,
+	ScrollView,
 } from "react-native";
 import { Image } from "expo-image";
 import { Text } from "@/components/ui/text";
@@ -19,19 +18,10 @@ import { colors } from "@/constants/colors";
 import { useRouter } from "expo-router";
 import { AddPintToStorage, CreatePost } from "@/queries/pints";
 import { useAuth } from "@/context/supabase-provider";
-import { Picker, PickerIOS } from "@react-native-picker/picker";
-import { MaterialIcons, FontAwesome6 } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
-import { getUserGroups, Group, GroupMember } from "@/queries/groups";
-import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectLabel,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+import { getUserGroups, type Group } from "@/queries/groups";
+import { BlurView } from "expo-blur";
 
 const DRINK_TYPES = [
 	"Beer 🍺",
@@ -56,17 +46,23 @@ export default function ShowPint() {
 	const [quantity, setQuantity] = useState(1);
 	const [drinkType, setDrinkType] = useState(DRINK_TYPES[0]);
 	const [uploading, setUploading] = useState(false);
-	const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null); // New state variable
+	const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+	const [loadingGroups, setLoadingGroups] = useState(true);
+	const [showQuantityPicker, setShowQuantityPicker] = useState(false);
+	const [showTypePicker, setShowTypePicker] = useState(false);
+	const [showGroupPicker, setShowGroupPicker] = useState(false);
 
 	const resetState = () => {
 		setBackImage(null);
 		setFrontImage(null);
 		setFacing("back");
 		setQuantity(1);
-		setUserGroups([]);
 		setDrinkType(DRINK_TYPES[0]);
 		setUploading(false);
-		setSelectedGroupId(null); // Also reset the selected group
+		setSelectedGroupId(null);
+		setShowQuantityPicker(false);
+		setShowTypePicker(false);
+		setShowGroupPicker(false);
 	};
 
 	useEffect(() => {
@@ -79,7 +75,6 @@ export default function ShowPint() {
 			const userGroups = await getUserGroups(session?.user.id);
 			if (userGroups) {
 				setUserGroups(userGroups);
-				// Set the first group as the default selected group
 				if (userGroups.length > 0) {
 					setSelectedGroup(userGroups[0]);
 					setSelectedGroupId(userGroups[0].id);
@@ -95,13 +90,14 @@ export default function ShowPint() {
 					setLocation(`${address.street || ""}, ${address.city || ""}`);
 				}
 			}
+			setLoadingGroups(false);
 		})();
 	}, []);
 
 	const takePicture = async () => {
 		const photo = await ref.current?.takePictureAsync({
 			base64: true,
-			quality: 0.7, // Adjust quality to manage file size
+			quality: 0.7,
 		});
 
 		if (photo) {
@@ -132,8 +128,6 @@ export default function ShowPint() {
 
 			if (error) {
 				console.error("Error uploading images:", error);
-				// Here you might want to show an error message to the user
-				// using your preferred notification system
 				return;
 			}
 
@@ -144,12 +138,13 @@ export default function ShowPint() {
 					[{ text: "OK", onPress: () => {} }],
 				);
 			}
+
 			const post = await CreatePost({
 				userId: session.user.id,
 				description: `${quantity}x ${drinkType}`,
 				location,
 				imageUrl: `${backImageUrl},${frontImageUrl}`,
-				groupId: selectedGroupId, // Include the selected group ID
+				groupId: selectedGroupId,
 			});
 
 			if (post) {
@@ -157,7 +152,7 @@ export default function ShowPint() {
 				Alert.alert("Success", "Your pint was shared successfully!", [
 					{
 						text: "Take Another",
-						onPress: () => {}, // State is already reset
+						onPress: () => {},
 					},
 				]);
 			} else {
@@ -170,6 +165,70 @@ export default function ShowPint() {
 		}
 	};
 
+	// Render iOS-style wheel picker
+	const renderWheelPicker = (
+		items: string[] | number[],
+		selectedItem: string | number,
+		onSelect: (item: any) => void,
+		onClose: () => void,
+	) => {
+		return (
+			<Modal
+				animationType="slide"
+				transparent={true}
+				visible={true}
+				onRequestClose={onClose}
+			>
+				<View style={styles.modalOverlay}>
+					<BlurView intensity={80} tint="dark" style={styles.pickerContainer}>
+						<View style={styles.pickerHeader}>
+							<TouchableOpacity onPress={onClose}>
+								<Text style={styles.pickerCancel}>Cancelar</Text>
+							</TouchableOpacity>
+
+							<TouchableOpacity onPress={onClose}>
+								<Text style={styles.pickerDone}>Confirmar</Text>
+							</TouchableOpacity>
+						</View>
+
+						<View style={styles.pickerWheel}>
+							<View style={styles.pickerSelection} />
+							<ScrollView
+								showsVerticalScrollIndicator={false}
+								contentContainerStyle={styles.pickerScrollContent}
+								snapToInterval={50}
+								decelerationRate="fast"
+							>
+								{items.map((item) => (
+									<TouchableOpacity
+										key={item.toString()}
+										style={[
+											styles.pickerItem,
+											selectedItem === item && styles.pickerItemSelected,
+										]}
+										onPress={() => {
+											onSelect(item);
+											onClose();
+										}}
+									>
+										<Text
+											style={[
+												styles.pickerItemText,
+												selectedItem === item && styles.pickerItemTextSelected,
+											]}
+										>
+											{item.toString()}
+										</Text>
+									</TouchableOpacity>
+								))}
+							</ScrollView>
+						</View>
+					</BlurView>
+				</View>
+			</Modal>
+		);
+	};
+
 	if (!permission) {
 		return null;
 	}
@@ -177,7 +236,7 @@ export default function ShowPint() {
 	if (!permission.granted) {
 		return (
 			<View style={styles.container}>
-				<Text style={styles.cameraText}>
+				<Text style={styles.permissionText}>
 					We need your permission to use the camera
 				</Text>
 				<Pressable style={styles.permissionButton} onPress={requestPermission}>
@@ -187,187 +246,206 @@ export default function ShowPint() {
 		);
 	}
 
+	if (loadingGroups) {
+		return (
+			<View style={styles.container}>
+				<ActivityIndicator size="large" color={colors.dark.foreground} />
+				<Text style={styles.loadingText}>Loading Groups...</Text>
+			</View>
+		);
+	}
+
 	if (!frontImage || !backImage) {
 		return (
 			<View style={styles.container}>
-				<CameraView
-					style={styles.camera}
-					ref={ref}
-					mode="picture"
-					facing={facing}
-				/>
-				{/* UI elements moved outside CameraView */}
-				<View style={styles.container}>
-					<Select
-						onValueChange={(value) => {
-							const group = userGroups.find((g) => g.id === value?.value);
-							setSelectedGroup(group || null);
-							setSelectedGroupId(group?.id || null);
-						}}
-						defaultValue={{
-							label: userGroups[0].name,
-							value: userGroups[0].id,
-						}}
+				<CameraView style={styles.camera} ref={ref} facing={facing} />
+
+				{/* Group Selector - Bottom left */}
+				<TouchableOpacity
+					style={styles.groupSelectorButton}
+					onPress={() => setShowGroupPicker(true)}
+				>
+					<BlurView
+						intensity={30}
+						tint="dark"
+						style={styles.groupSelectorBlur}
+						className="ml-6 "
 					>
-						<SelectTrigger className="w-[250px]">
-							<SelectValue
-								className="text-foreground text-sm native:text-lg"
-								placeholder="Select a group"
-							/>
-						</SelectTrigger>
-						<SelectContent className="w-[250px]">
-							<SelectGroup>
-								<SelectLabel>Groups</SelectLabel>
-								{userGroups.map((group) => (
-									<SelectItem
-										key={group.id}
-										label={group.name}
-										value={group.id}
-									>
-										{group.name}
-									</SelectItem>
-								))}
-							</SelectGroup>
-						</SelectContent>
-					</Select>
+						<View style={styles.groupSelector}>
+							<MaterialIcons name="group" size={18} color="#FFCA28" />
+							<Text style={styles.groupSelectorText} numberOfLines={1}>
+								{selectedGroup ? selectedGroup.name : "Select Group"}
+							</Text>
+						</View>
+					</BlurView>
+				</TouchableOpacity>
+
+				{/* Camera Controls */}
+				<View style={styles.cameraControls}>
+					<TouchableOpacity
+						style={styles.iconButton}
+						onPress={toggleFacing}
+						className=""
+					>
+						<BlurView
+							intensity={50}
+							tint="dark"
+							style={styles.iconButtonBlur}
+							className=""
+						>
+							<Ionicons name="camera-reverse-outline" size={24} color="white" />
+						</BlurView>
+					</TouchableOpacity>
+
+					<TouchableOpacity style={styles.shutterButton} onPress={takePicture}>
+						<View style={styles.shutterButtonInner} />
+					</TouchableOpacity>
+
+					<View style={styles.iconButton} />
 				</View>
-				<View className="absolute bottom-0 left-0 w-full p-4">
-					<View style={styles.shutterContainer}>
-						<Pressable onPress={toggleFacing}>
-							<FontAwesome6 name="rotate-left" size={32} color="white" />
-						</Pressable>
-						<Pressable onPress={takePicture}>
-							{({ pressed }) => (
-								<View
-									style={[
-										styles.shutterBtn,
-										{
-											opacity: pressed ? 0.5 : 1,
-										},
-									]}
-								>
-									<View style={styles.shutterBtnInner} />
-								</View>
-							)}
-						</Pressable>
-						<View style={{ width: 32 }} />
-					</View>
-					<Text style={styles.cameraText}>
-						Take your {facing === "back" ? "drink" : "selfie"} photo
-					</Text>
-				</View>
+
+				{/* Camera Instructions */}
+				<Text style={styles.cameraInstructions}>
+					Tire sua foto do {facing === "back" ? "drink🍻" : "rosto🤳🏻"}
+				</Text>
+
+				{/* Group Picker Modal */}
+				{showGroupPicker &&
+					userGroups.length > 0 &&
+					renderWheelPicker(
+						userGroups.map((g) => g.name),
+						selectedGroup?.name || "",
+						(name) => {
+							const group = userGroups.find((g) => g.name === name);
+							if (group) {
+								setSelectedGroup(group);
+								setSelectedGroupId(group.id);
+							}
+						},
+						() => setShowGroupPicker(false),
+					)}
 			</View>
 		);
 	}
 
 	return (
 		<View style={styles.container}>
+			{/* Main Image Preview */}
 			<View style={styles.previewContainer}>
 				<Image source={{ uri: backImage }} style={styles.mainPreview} />
+
+				{/* Selfie Preview */}
 				<View style={styles.selfiePreview}>
 					<Image source={{ uri: frontImage }} style={styles.selfieImage} />
 				</View>
+
+				{/* Location Overlay - Rounded pill at top */}
+				<BlurView intensity={40} tint="dark" style={styles.locationOverlay}>
+					<MaterialIcons name="location-on" size={16} color="#FFCA28" />
+					<Text style={styles.locationText} numberOfLines={1}>
+						{location}
+					</Text>
+				</BlurView>
 			</View>
 
-			<View style={styles.controls}>
-				{/* Group Picker */}
-				<View style={styles.pickerWrapper}>
-					<Text style={styles.pickerLabel}>Group</Text>
-					<View style={styles.pickerContainer}>
-						<Picker
-							selectedValue={selectedGroupId}
-							onValueChange={(itemValue) => setSelectedGroupId(itemValue)}
-							style={styles.picker}
-							itemStyle={styles.pickerItem}
-						>
-							<Picker.Item
-								label="None"
-								value={null}
-								color={colors.dark.foreground}
-							/>
-							{userGroups.map((group) => (
-								<Picker.Item
-									key={group.id}
-									label={group.name}
-									value={group.id}
-									color={colors.dark.foreground}
-								/>
-							))}
-						</Picker>
-					</View>
-				</View>
-
-				<View style={styles.locationBar}>
-					<MaterialIcons
-						name="location-on"
-						size={20}
-						color={colors.dark.accent}
-					/>
-					<Text style={styles.locationText}>{location}</Text>
-				</View>
-
-				<ScrollView
-					horizontal
-					showsHorizontalScrollIndicator={false}
-					contentContainerStyle={styles.pickersContainer}
+			{/* Bottom Controls */}
+			<BlurView intensity={40} tint="dark" style={styles.bottomControls}>
+				{/* Group Selector */}
+				<TouchableOpacity
+					style={styles.controlRow}
+					onPress={() => setShowGroupPicker(true)}
 				>
-					<View style={styles.pickerWrapper}>
-						<Text style={styles.pickerLabel}>Quantity</Text>
-						<View style={styles.pickerContainer}>
-							<Picker
-								selectedValue={quantity}
-								onValueChange={setQuantity}
-								style={styles.picker}
-								itemStyle={styles.pickerItem}
-							>
-								{[...Array(10)].map((_, i) => (
-									<Picker.Item
-										key={i + 1}
-										label={`${i + 1}`}
-										value={i + 1}
-										color={colors.dark.foreground}
-									/>
-								))}
-							</Picker>
-						</View>
+					<View style={styles.controlLabelContainer}>
+						<MaterialIcons name="group" size={18} color="#FFCA28" />
+						<Text style={styles.controlLabel}>Group</Text>
 					</View>
-
-					<View style={styles.pickerWrapper}>
-						<Text style={styles.pickerLabel}>Type</Text>
-						<View style={styles.pickerContainer}>
-							<Picker
-								selectedValue={drinkType}
-								onValueChange={setDrinkType}
-								style={styles.picker}
-								itemStyle={styles.pickerItem}
-							>
-								{DRINK_TYPES.map((drink) => (
-									<Picker.Item
-										key={drink}
-										label={drink}
-										value={drink}
-										color={colors.dark.foreground}
-									/>
-								))}
-							</Picker>
-						</View>
+					<View style={styles.controlValue}>
+						<Text style={styles.controlValueText} numberOfLines={1}>
+							{selectedGroup ? selectedGroup.name : "Select Group"}
+						</Text>
+						<MaterialIcons name="chevron-right" size={20} color="white" />
 					</View>
-				</ScrollView>
+				</TouchableOpacity>
 
-				<Pressable
-					className="bg-yellow-400 flex flex-row items-center rounded-lg p-4 mt-4"
+				{/* Quantity Selector */}
+				<TouchableOpacity
+					style={styles.controlRow}
+					onPress={() => setShowQuantityPicker(true)}
+				>
+					<View style={styles.controlLabelContainer}>
+						<MaterialIcons
+							name="format-list-numbered"
+							size={18}
+							color="#FFCA28"
+						/>
+						<Text style={styles.controlLabel}>Quantity</Text>
+					</View>
+					<View style={styles.controlValue}>
+						<Text style={styles.controlValueText}>{quantity}</Text>
+						<MaterialIcons name="chevron-right" size={20} color="white" />
+					</View>
+				</TouchableOpacity>
+
+				{/* Drink Type Selector */}
+				<TouchableOpacity
+					style={styles.controlRow}
+					onPress={() => setShowTypePicker(true)}
+				>
+					<View style={styles.controlLabelContainer}>
+						<MaterialIcons name="local-bar" size={18} color="#FFCA28" />
+						<Text style={styles.controlLabel}>Type</Text>
+					</View>
+					<View style={styles.controlValue}>
+						<Text style={styles.controlValueText}>{drinkType}</Text>
+						<MaterialIcons name="chevron-right" size={20} color="white" />
+					</View>
+				</TouchableOpacity>
+
+				{/* Share Button */}
+				<TouchableOpacity
+					style={styles.shareButton}
 					onPress={handleShare}
 					disabled={uploading}
 				>
 					{uploading ? (
-						<ActivityIndicator color={colors.dark.background} />
+						<ActivityIndicator color="#000" />
 					) : (
-						<Text className="text-yellow-950 font-bold text-xl text-right">
-							Adicionar Bebida 🍻
-						</Text>
+						<Text style={styles.shareButtonText}>Adicionar Bebida 🍻</Text>
 					)}
-				</Pressable>
-			</View>
+				</TouchableOpacity>
+			</BlurView>
+
+			{/* Pickers */}
+			{showQuantityPicker &&
+				renderWheelPicker(
+					[...Array(10)].map((_, i) => i + 1),
+					quantity,
+					(value) => setQuantity(value),
+					() => setShowQuantityPicker(false),
+				)}
+
+			{showTypePicker &&
+				renderWheelPicker(
+					DRINK_TYPES,
+					drinkType,
+					(value) => setDrinkType(value),
+					() => setShowTypePicker(false),
+				)}
+
+			{showGroupPicker &&
+				userGroups.length > 0 &&
+				renderWheelPicker(
+					userGroups.map((g) => g.name),
+					selectedGroup?.name || "",
+					(name) => {
+						const group = userGroups.find((g) => g.name === name);
+						if (group) {
+							setSelectedGroup(group);
+							setSelectedGroupId(group.id);
+						}
+					},
+					() => setShowGroupPicker(false),
+				)}
 		</View>
 	);
 }
@@ -375,60 +453,81 @@ export default function ShowPint() {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: colors.dark.background,
+		backgroundColor: "#000",
 	},
 	camera: {
 		flex: 1,
 		width: "100%",
 	},
-	shutterContainer: {
+	groupSelectorButton: {
 		position: "absolute",
-		bottom: 44,
-		left: 0,
-		width: "100%",
+		bottom: 150,
+		left: 115,
+		zIndex: 10,
+	},
+	groupSelectorBlur: {
+		borderRadius: 20,
+		overflow: "hidden",
+	},
+	groupSelector: {
+		flexDirection: "row",
 		alignItems: "center",
+		paddingVertical: 8,
+		paddingHorizontal: 12,
+	},
+	groupSelectorText: {
+		color: "white",
+		fontSize: 14,
+		fontWeight: "600",
+		marginLeft: 6,
+		maxWidth: 120,
+	},
+	cameraControls: {
+		position: "absolute",
+		bottom: 50,
+		left: 0,
+		right: 0,
 		flexDirection: "row",
 		justifyContent: "space-between",
-		paddingHorizontal: 30,
+		alignItems: "center",
+		paddingHorizontal: 40,
 	},
-	shutterBtn: {
-		backgroundColor: "transparent",
-		borderWidth: 5,
-		borderColor: "white",
-		width: 85,
-		height: 85,
-		borderRadius: 45,
+	iconButton: {
+		width: 44,
+		height: 44,
+		borderRadius: 22,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	shutterBtnInner: {
-		width: 70,
-		height: 70,
-		borderRadius: 50,
+	iconButtonBlur: {
+		width: 48,
+		height: 48,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	shutterButton: {
+		width: 80,
+		height: 80,
+		borderRadius: 40,
+		borderWidth: 4,
+		borderColor: "white",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	shutterButtonInner: {
+		width: 65,
+		height: 65,
+		borderRadius: 32.5,
 		backgroundColor: "white",
 	},
-	cameraText: {
+	cameraInstructions: {
 		position: "absolute",
-		bottom: 150,
+		bottom: 20,
 		width: "100%",
 		textAlign: "center",
 		color: "white",
-		fontSize: 20,
-		fontWeight: "bold",
-	},
-	captureButton: {
-		width: 70,
-		height: 70,
-		borderRadius: 35,
-		backgroundColor: "rgba(255, 255, 255, 0.3)",
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	captureButtonInner: {
-		width: 60,
-		height: 60,
-		borderRadius: 30,
-		backgroundColor: colors.dark.foreground,
+		fontSize: 16,
+		fontWeight: "500",
 	},
 	previewContainer: {
 		flex: 1,
@@ -444,76 +543,159 @@ const styles = StyleSheet.create({
 		right: 20,
 		width: 100,
 		height: 100,
-		borderRadius: 8,
+		borderRadius: 12,
 		overflow: "hidden",
 		borderWidth: 2,
-		borderColor: colors.dark.background,
+		borderColor: "white",
 	},
 	selfieImage: {
 		width: "100%",
 		height: "100%",
 	},
-	controls: {
-		padding: 20,
-		paddingBottom: 40,
-	},
-	locationBar: {
+	locationOverlay: {
+		position: "absolute",
+		top: 20,
+		left: "50%",
+		transform: [{ translateX: -100 }],
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: colors.dark.card,
-		padding: 10,
-		borderRadius: 8,
-		marginBottom: 20,
+		paddingVertical: 8,
+		paddingHorizontal: 16,
+		borderRadius: 20,
+		width: 200,
 	},
 	locationText: {
-		color: colors.dark.foreground,
-		marginLeft: 10,
-	},
-	pickersContainer: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		width: "100%",
-		paddingVertical: 10,
-	},
-	pickerWrapper: {
-		flex: 1,
-		marginHorizontal: 5,
-	},
-	pickerLabel: {
-		color: colors.dark.foreground,
+		color: "white",
 		fontSize: 14,
-		marginBottom: 4,
-		textAlign: "center",
+		marginLeft: 6,
+		flex: 1,
 	},
-	pickerContainer: {
-		backgroundColor: colors.dark.card,
-		borderRadius: 12,
+	bottomControls: {
+		padding: 20,
+		borderTopLeftRadius: 20,
+		borderTopRightRadius: 20,
 		overflow: "hidden",
-		width: "100%",
 	},
-	picker: {
-		width: "100%",
-		backgroundColor: colors.dark.card,
+	controlRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		marginBottom: 16,
+		paddingVertical: 8,
 	},
-	pickerItem: {
-		color: colors.dark.foreground,
+	controlLabelContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+	},
+	controlLabel: {
+		color: "white",
 		fontSize: 16,
+		fontWeight: "500",
+		marginLeft: 8,
 	},
-
+	controlValue: {
+		flexDirection: "row",
+		alignItems: "center",
+	},
+	controlValueText: {
+		color: "rgba(255, 255, 255, 0.8)",
+		fontSize: 16,
+		marginRight: 4,
+		maxWidth: 150,
+	},
+	shareButton: {
+		backgroundColor: "#FFCA28",
+		borderRadius: 16,
+		paddingVertical: 14,
+		alignItems: "center",
+		marginTop: 8,
+	},
 	shareButtonText: {
-		color: colors.dark.background,
-		fontSize: 16,
-		fontWeight: "bold",
+		color: "#000",
+		fontSize: 18,
+		fontWeight: "600",
+	},
+	permissionText: {
+		color: "white",
+		fontSize: 18,
+		textAlign: "center",
+		marginBottom: 20,
 	},
 	permissionButton: {
-		backgroundColor: colors.dark.accent,
-		padding: 12,
-		borderRadius: 8,
-		marginTop: 20,
+		backgroundColor: "#FFCA28",
+		paddingVertical: 12,
+		paddingHorizontal: 24,
+		borderRadius: 12,
 	},
 	permissionButtonText: {
-		color: colors.dark.background,
+		color: "#000",
 		fontSize: 16,
-		textAlign: "center",
+		fontWeight: "600",
+	},
+	loadingText: {
+		color: "white",
+		fontSize: 18,
+		marginTop: 20,
+	},
+	modalOverlay: {
+		flex: 1,
+		justifyContent: "flex-end",
+		backgroundColor: "rgba(0, 0, 0, 0.5)",
+	},
+	pickerContainer: {
+		borderTopLeftRadius: 16,
+		borderTopRightRadius: 16,
+		overflow: "hidden",
+	},
+	pickerHeader: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		paddingHorizontal: 20,
+		paddingVertical: 16,
+		borderBottomWidth: 1,
+		borderBottomColor: "rgba(255, 255, 255, 0.1)",
+	},
+	pickerCancel: {
+		color: "#FFCA28",
+		fontSize: 16,
+	},
+	pickerDone: {
+		color: "#FFCA28",
+		fontSize: 16,
+		fontWeight: "600",
+	},
+	pickerWheel: {
+		height: 220,
+		position: "relative",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	pickerSelection: {
+		position: "absolute",
+		height: 50,
+		left: 0,
+		right: 0,
+		backgroundColor: "rgba(255, 255, 255, 0.1)",
+	},
+	pickerScrollContent: {
+		paddingVertical: 85,
+	},
+	pickerItem: {
+		height: 50,
+		justifyContent: "center",
+		alignItems: "center",
+		paddingHorizontal: 20,
+	},
+	pickerItemSelected: {
+		// No additional styling needed as the selection bar shows the selected item
+	},
+	pickerItemText: {
+		color: "rgba(255, 255, 255, 0.6)",
+		fontSize: 20,
+	},
+	pickerItemTextSelected: {
+		color: "white",
+		fontSize: 22,
+		fontWeight: "500",
 	},
 });
