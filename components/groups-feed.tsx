@@ -35,7 +35,7 @@ export const dayBasedMessages = {
 		"segunda, o dia perfeito para começar a beber... às 8 da manhã.",
 		"segunda, porque sobriedade é superestimada.",
 		"segunda, o único dia em que 'é 5 da tarde em algum lugar' começa às 9 da manhã.",
-		"segunda, nada como uma ressaca para esquecer que é segunda.",
+		"nada como uma ressaca para esquecer que é segunda.",
 	],
 	"terça-feira": [
 		"terça, o dia em que seu fígado ainda está processando o fim de semana.",

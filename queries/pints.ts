@@ -173,11 +173,13 @@ export async function CreatePost({
 	description,
 	location,
 	imageUrl,
+	groupId,
 }: {
 	userId: string;
 	description: string;
 	location: string;
 	imageUrl: string;
+	groupId: string;
 }) {
 	const { data, error } = await supabase
 		.from("posts")
@@ -189,6 +191,7 @@ export async function CreatePost({
 				image_url: imageUrl,
 			},
 		])
+		.eq("group", groupId)
 		.select("*");
 
 	if (error) {

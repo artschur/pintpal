@@ -19,9 +19,19 @@ import { colors } from "@/constants/colors";
 import { useRouter } from "expo-router";
 import { AddPintToStorage, CreatePost } from "@/queries/pints";
 import { useAuth } from "@/context/supabase-provider";
-import { Picker } from "@react-native-picker/picker";
+import { Picker, PickerIOS } from "@react-native-picker/picker";
 import { MaterialIcons, FontAwesome6 } from "@expo/vector-icons";
 import * as Location from "expo-location";
+import { getUserGroups, Group, GroupMember } from "@/queries/groups";
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectLabel,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 const DRINK_TYPES = [
 	"Beer 🍺",
@@ -38,25 +48,43 @@ export default function ShowPint() {
 	const [permission, requestPermission] = useCameraPermissions();
 	const ref = useRef<CameraView>(null);
 	const [backImage, setBackImage] = useState<string | null>(null);
+	const [userGroups, setUserGroups] = useState<Group[]>([]);
+	const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
 	const [frontImage, setFrontImage] = useState<string | null>(null);
 	const [facing, setFacing] = useState<CameraType>("back");
 	const [location, setLocation] = useState<string>("");
 	const [quantity, setQuantity] = useState(1);
 	const [drinkType, setDrinkType] = useState(DRINK_TYPES[0]);
 	const [uploading, setUploading] = useState(false);
+	const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null); // New state variable
 
 	const resetState = () => {
 		setBackImage(null);
 		setFrontImage(null);
 		setFacing("back");
 		setQuantity(1);
+		setUserGroups([]);
 		setDrinkType(DRINK_TYPES[0]);
 		setUploading(false);
+		setSelectedGroupId(null); // Also reset the selected group
 	};
 
 	useEffect(() => {
 		(async () => {
+			if (!session?.user?.id) {
+				router.back();
+				return;
+			}
 			const { status } = await Location.requestForegroundPermissionsAsync();
+			const userGroups = await getUserGroups(session?.user.id);
+			if (userGroups) {
+				setUserGroups(userGroups);
+				// Set the first group as the default selected group
+				if (userGroups.length > 0) {
+					setSelectedGroup(userGroups[0]);
+					setSelectedGroupId(userGroups[0].id);
+				}
+			}
 			if (status === "granted") {
 				const location = await Location.getCurrentPositionAsync({});
 				const [address] = await Location.reverseGeocodeAsync({
@@ -109,11 +137,19 @@ export default function ShowPint() {
 				return;
 			}
 
+			if (!selectedGroupId) {
+				return Alert.alert(
+					"Group Required",
+					"Please select a group to share your pint.",
+					[{ text: "OK", onPress: () => {} }],
+				);
+			}
 			const post = await CreatePost({
 				userId: session.user.id,
 				description: `${quantity}x ${drinkType}`,
 				location,
 				imageUrl: `${backImageUrl},${frontImageUrl}`,
+				groupId: selectedGroupId, // Include the selected group ID
 			});
 
 			if (post) {
@@ -161,6 +197,40 @@ export default function ShowPint() {
 					facing={facing}
 				/>
 				{/* UI elements moved outside CameraView */}
+				<View style={styles.container}>
+					<Select
+						onValueChange={(value) => {
+							const group = userGroups.find((g) => g.id === value?.value);
+							setSelectedGroup(group || null);
+							setSelectedGroupId(group?.id || null);
+						}}
+						defaultValue={{
+							label: userGroups[0].name,
+							value: userGroups[0].id,
+						}}
+					>
+						<SelectTrigger className="w-[250px]">
+							<SelectValue
+								className="text-foreground text-sm native:text-lg"
+								placeholder="Select a group"
+							/>
+						</SelectTrigger>
+						<SelectContent className="w-[250px]">
+							<SelectGroup>
+								<SelectLabel>Groups</SelectLabel>
+								{userGroups.map((group) => (
+									<SelectItem
+										key={group.id}
+										label={group.name}
+										value={group.id}
+									>
+										{group.name}
+									</SelectItem>
+								))}
+							</SelectGroup>
+						</SelectContent>
+					</Select>
+				</View>
 				<View className="absolute bottom-0 left-0 w-full p-4">
 					<View style={styles.shutterContainer}>
 						<Pressable onPress={toggleFacing}>
@@ -200,6 +270,33 @@ export default function ShowPint() {
 			</View>
 
 			<View style={styles.controls}>
+				{/* Group Picker */}
+				<View style={styles.pickerWrapper}>
+					<Text style={styles.pickerLabel}>Group</Text>
+					<View style={styles.pickerContainer}>
+						<Picker
+							selectedValue={selectedGroupId}
+							onValueChange={(itemValue) => setSelectedGroupId(itemValue)}
+							style={styles.picker}
+							itemStyle={styles.pickerItem}
+						>
+							<Picker.Item
+								label="None"
+								value={null}
+								color={colors.dark.foreground}
+							/>
+							{userGroups.map((group) => (
+								<Picker.Item
+									key={group.id}
+									label={group.name}
+									value={group.id}
+									color={colors.dark.foreground}
+								/>
+							))}
+						</Picker>
+					</View>
+				</View>
+
 				<View style={styles.locationBar}>
 					<MaterialIcons
 						name="location-on"

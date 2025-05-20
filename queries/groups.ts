@@ -1,6 +1,6 @@
 import { supabase } from "@/config/supabase";
 
-type Group = {
+export type Group = {
 	id: string;
 	name: string;
 	description?: string;
