@@ -84,6 +84,7 @@ export default function ShowPint() {
 				description: `${quantity}x ${drinkType}`,
 				location,
 				imageUrl: `${backImage},${frontImage}`,
+				groupId: session.user.user_metadata.group_id,
 			});
 
 			if (post) {
