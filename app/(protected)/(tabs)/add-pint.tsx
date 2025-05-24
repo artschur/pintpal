@@ -133,6 +133,8 @@ export default function ShowPint() {
 				);
 			}
 
+			console.log(selectedGroupId);
+
 			const post = await CreatePost({
 				userId: session.user.id,
 				description: `${quantity}x ${drinkType}`,

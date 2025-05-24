@@ -189,6 +189,7 @@ export async function CreatePost({
 				location,
 				description,
 				image_url: imageUrl,
+				group: groupId,
 			},
 		])
 		.eq("group", groupId)
@@ -200,4 +201,27 @@ export async function CreatePost({
 	}
 
 	return data[0];
+}
+
+export async function GetGroupPints(groupId: string) {
+	const { data, error } = await supabase
+		.from("posts")
+		.select(
+			`
+			*,
+			profiles:user_id (
+				username,
+				avatar_url
+			)
+		`,
+		)
+		.eq("group", groupId)
+		.order("created_at", { ascending: false });
+
+	if (error) {
+		console.error("Error fetching group pints:", error);
+		return [];
+	}
+	console.log(data);
+	return data;
 }
