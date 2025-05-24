@@ -1,4 +1,3 @@
-// components/groups-feed.tsx
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -8,11 +7,13 @@ import {
 	RefreshControl,
 	Pressable,
 	Image,
+	ActivityIndicator,
 } from "react-native";
 import { Text } from "@/components/ui/text";
 import { useAuth } from "@/context/supabase-provider";
 import {
 	getUserGroupsWithMembers,
+	getAllGroupsWithMembers,
 	type GroupWithMembers,
 } from "@/queries/groups";
 import { Group } from "./group";
@@ -89,38 +90,84 @@ function getRandomMessage(day: string): string {
 export default function GroupFeed() {
 	const { session } = useAuth();
 	const [userGroups, setUserGroups] = useState<GroupWithMembers[]>([]);
-	const [otherGroups, setOtherGroups] = useState<GroupWithMembers[]>([]);
+	const [discoverGroups, setDiscoverGroups] = useState<GroupWithMembers[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [loadingMore, setLoadingMore] = useState(false);
 	const [refreshing, setRefreshing] = useState(false);
 	const [dayMessage, setDayMessage] = useState("");
+	const [pagination, setPagination] = useState({
+		hasMore: false,
+		total: 0,
+		offset: 0,
+	});
 	const router = useRouter();
 
-	const fetchGroups = async () => {
-		if (!session?.user.id) {
-			setLoading(false);
-			return;
-		}
-		try {
-			const groups: GroupWithMembers[] = await getUserGroupsWithMembers(
-				session.user.id,
-			);
-			if (groups) {
-				setUserGroups(groups);
+	const PAGE_SIZE = 5; // Number of groups to load per page
 
-				// For demo purposes - in a real app, you'd fetch these separately
-				setOtherGroups(groups.map((g) => ({ ...g, id: `other-${g.id}` })));
-			}
+	const fetchUserGroups = async () => {
+		if (!session?.user.id) return;
+		try {
+			const groups = await getUserGroupsWithMembers(session.user.id);
+			setUserGroups(groups);
 		} catch (error) {
-			console.error("Error fetching groups:", error);
+			console.error("Error fetching user groups:", error);
+		}
+	};
+
+	const fetchDiscoverGroups = async (offset = 0, reset = false) => {
+		try {
+			const result = await getAllGroupsWithMembers({
+				limit: PAGE_SIZE,
+				offset,
+				onlyActiveInvites: true, // Only show groups accepting invites
+				orderBy: "member_count",
+				ascending: false, // Most popular first
+			});
+
+			if (reset) {
+				setDiscoverGroups(result.groups);
+			} else {
+				setDiscoverGroups((prev) => [...prev, ...result.groups]);
+			}
+
+			setPagination({
+				hasMore: result.hasMore,
+				total: result.total,
+				offset: offset + PAGE_SIZE,
+			});
+		} catch (error) {
+			console.error("Error fetching discover groups:", error);
+		}
+	};
+
+	const fetchAllData = async () => {
+		setLoading(true);
+		try {
+			await Promise.all([fetchUserGroups(), fetchDiscoverGroups(0, true)]);
+		} catch (error) {
+			console.error("Error fetching data:", error);
 		} finally {
 			setLoading(false);
 			setRefreshing(false);
 		}
 	};
 
+	const loadMoreGroups = async () => {
+		if (loadingMore || !pagination.hasMore) return;
+
+		setLoadingMore(true);
+		try {
+			await fetchDiscoverGroups(pagination.offset, false);
+		} catch (error) {
+			console.error("Error loading more groups:", error);
+		} finally {
+			setLoadingMore(false);
+		}
+	};
+
 	useEffect(() => {
 		if (session?.user?.id) {
-			fetchGroups();
+			fetchAllData();
 		}
 
 		const today = new Date();
@@ -130,22 +177,24 @@ export default function GroupFeed() {
 
 	const onRefresh = useCallback(() => {
 		setRefreshing(true);
-		fetchGroups();
+		setPagination({ hasMore: false, total: 0, offset: 0 });
+		fetchAllData();
 	}, []);
 
 	const handleGroupPress = (group: GroupWithMembers) => {
-		// Navigate to group details
-		router.push(`/group/${group.id}`);
+		router.push(`/(protected)/group/${group.id}`);
 	};
 
 	const handleJoinGroup = (group: GroupWithMembers) => {
-		// Handle join group logic
-		console.log("Join group:", group.name);
+		// Navigate to invite handler if group has invite token
+		if (group.invite_token) {
+			router.push(`/invite/${group.invite_token}`);
+		}
 	};
 
 	if (!session?.user?.id) {
 		return (
-			<View className="flex-1 items-center justify-center bg-dark-background">
+			<View className="flex-1 items-center justify-center bg-neutral-950">
 				<Text className="text-white text-base text-center">
 					Please log in to view your groups.
 				</Text>
@@ -155,8 +204,8 @@ export default function GroupFeed() {
 
 	if (loading) {
 		return (
-			<View className="flex-1 items-center justify-center bg-dark-background">
-				<View className="h-8 w-8 rounded-full border-2 border-yellow-500 border-t-transparent animate-spin" />
+			<View className="flex-1 items-center justify-center bg-neutral-950">
+				<ActivityIndicator size="large" color="#FFCA28" />
 				<Text className="text-white text-base mt-4">Carregando grupos...</Text>
 			</View>
 		);
@@ -164,7 +213,7 @@ export default function GroupFeed() {
 
 	return (
 		<ScrollView
-			className="flex-1 bg-dark-background"
+			className="flex-1 bg-neutral-950"
 			refreshControl={
 				<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
 			}
@@ -182,7 +231,7 @@ export default function GroupFeed() {
 							🍻 seus bros
 						</Text>
 					</View>
-					<Pressable onPress={() => router.push("/create-group")}>
+					<Pressable onPress={() => router.push("/(protected)/create-group")}>
 						<Text className="text-yellow-400">Criar grupo</Text>
 					</Pressable>
 				</View>
@@ -191,7 +240,7 @@ export default function GroupFeed() {
 					<BlurView
 						intensity={20}
 						tint="dark"
-						className="rounded-xl p-6 items-center justify-center h-36"
+						className="rounded-xl p-6 items-center justify-center h-36 border border-neutral-800"
 					>
 						<MaterialIcons name="group-add" size={32} color="#FFCA28" />
 						<Text className="text-white text-base mt-2 text-center">
@@ -221,28 +270,28 @@ export default function GroupFeed() {
 							🌎 descobrir bros
 						</Text>
 					</View>
-					<Pressable>
-						<Text className="text-yellow-400">Ver todos</Text>
-					</Pressable>
+					<Text className="text-neutral-400 text-sm">
+						{pagination.total} grupos
+					</Text>
 				</View>
 
-				{otherGroups.length === 0 ? (
+				{discoverGroups.length === 0 ? (
 					<BlurView
 						intensity={20}
 						tint="dark"
-						className="rounded-xl p-6 items-center justify-center h-36"
+						className="rounded-xl p-6 items-center justify-center h-36 border border-neutral-800"
 					>
 						<MaterialIcons name="search" size={32} color="#FFCA28" />
 						<Text className="text-white text-base mt-2 text-center">
-							No groups to discover right now
+							Sem grupos por enquanto.
 						</Text>
 					</BlurView>
 				) : (
 					<View className="space-y-4">
-						{otherGroups.map((group) => (
+						{discoverGroups.map((group) => (
 							<Pressable
 								key={group.id}
-								className="overflow-hidden rounded-xl border border-neutral-800"
+								className="overflow-hidden rounded-xl border border-neutral-800 mb-4"
 								onPress={() => handleGroupPress(group)}
 							>
 								<BlurView intensity={20} tint="dark" className="p-4 rounded-xl">
@@ -253,15 +302,16 @@ export default function GroupFeed() {
 												className="mr-[-12px]"
 												style={{ zIndex: 10 - index }}
 											>
-												<Image
-													source={{ uri: member.profiles.avatar_url }}
-													className="w-9 h-9 rounded-full border-2 border-dark-background"
-												/>
+												<View className="w-9 h-9 bg-neutral-700 rounded-full border-2 border-neutral-950 items-center justify-center">
+													<Text className="text-white text-sm">
+														{member.profiles.username.charAt(0).toUpperCase()}
+													</Text>
+												</View>
 											</View>
 										))}
 										{group.members.length > 5 && (
 											<View
-												className="w-9 h-9 rounded-full bg-opacity-20 bg-white justify-center items-center border-2 border-dark-background"
+												className="w-9 h-9 rounded-full bg-neutral-600 justify-center items-center border-2 border-neutral-950"
 												style={{ zIndex: 1 }}
 											>
 												<Text className="text-white text-xs font-bold">
@@ -274,17 +324,17 @@ export default function GroupFeed() {
 										<Text className="text-white text-lg font-bold">
 											{group.name}
 										</Text>
-										<View className="flex-row items-center bg-neutral-100 px-2 py-1 rounded-full">
+										<View className="flex-row items-center bg-yellow-400 px-2 py-1 rounded-full">
 											<MaterialIcons name="people" size={16} color="#000" />
-											<Text className="text-neutral-800 text-xs ml-1">
-												{group.members.length}
+											<Text className="text-black text-xs ml-1 font-semibold">
+												{group.members.length}/{group.member_limit}
 											</Text>
 										</View>
 									</View>
 
 									{group.description && (
 										<Text
-											className="text-white text-sm opacity-70 mb-3"
+											className="text-neutral-400 text-sm mb-3"
 											numberOfLines={2}
 										>
 											{group.description}
@@ -293,28 +343,45 @@ export default function GroupFeed() {
 
 									<View className="flex-row justify-between items-center">
 										<Pressable
-											className="bg-neutral-950 py-2 rounded-lg flex-1 mr-3"
+											className="bg-yellow-400 py-2 px-4 rounded-lg flex-1 mr-3"
 											onPress={(e) => {
 												e.stopPropagation();
 												handleJoinGroup(group);
 											}}
 										>
-											<Text className="font-semibold border-neutral-800 border text-neutral-300 bg-neutral-900 w-36 p-2 rounded-xl text-center">
+											<Text className="font-semibold text-black text-center">
 												Entrar no grupo
 											</Text>
 										</Pressable>
 
-										<Pressable className="w-10 h-10 rounded-full bg-neutral-100 justify-center items-center">
+										<Pressable className="w-10 h-10 rounded-full bg-neutral-700 justify-center items-center">
 											<MaterialIcons
 												name="arrow-forward"
 												size={20}
-												color="#000"
+												color="white"
 											/>
 										</Pressable>
 									</View>
 								</BlurView>
 							</Pressable>
 						))}
+
+						{/* Load More Button */}
+						{pagination.hasMore && (
+							<Pressable
+								className="bg-neutral-800 p-4 rounded-xl items-center"
+								onPress={loadMoreGroups}
+								disabled={loadingMore}
+							>
+								{loadingMore ? (
+									<ActivityIndicator size="small" color="#FFCA28" />
+								) : (
+									<Text className="text-yellow-400 font-semibold">
+										Carregar mais grupos
+									</Text>
+								)}
+							</Pressable>
+						)}
 					</View>
 				)}
 			</View>

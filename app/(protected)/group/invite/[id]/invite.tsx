@@ -18,9 +18,10 @@ import {
 	type Group,
 	type GroupMemberWithProfile,
 } from "@/queries/groups";
-import { sendGroupInviteByUsername, createInviteLink } from "@/queries/invites";
+import { createInviteLink, toggleGroupInvite } from "@/queries/invites";
 import * as Clipboard from "expo-clipboard";
 import { Ionicons } from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
 
 export default function GroupInvitePage() {
 	const { session } = useAuth();
@@ -61,12 +62,21 @@ export default function GroupInvitePage() {
 	const generateInviteLink = async () => {
 		try {
 			const link = await createInviteLink(groupId!);
+			console.log(link);
 			setInviteLink(link);
 		} catch (error) {
 			console.error("Error generating invite link:", error);
 		}
 	};
-
+	const toggleInvites = async () => {
+		try {
+			await toggleGroupInvite(groupId!, !group?.invite_active);
+			// Reload group data to update UI
+			loadGroupData();
+		} catch (error) {
+			console.error("Error toggling invites:", error);
+		}
+	};
 	const handleInviteByUsername = async () => {
 		if (!username.trim()) {
 			Alert.alert("Error", "Digite um nome de usuário");
@@ -75,11 +85,11 @@ export default function GroupInvitePage() {
 
 		setLoading(true);
 		try {
-			await sendGroupInviteByUsername(
-				groupId!,
-				username.trim(),
-				session?.user?.id!,
-			);
+			// await sendGroupInviteByUsername(
+			// 	groupId!,
+			// 	username.trim(),
+			// 	session?.user?.id!,
+			// );
 			Alert.alert("Sucesso", `Convite enviado para @${username}`);
 			setUsername("");
 		} catch (error: any) {
@@ -93,12 +103,20 @@ export default function GroupInvitePage() {
 	const copyInviteLink = async () => {
 		try {
 			await Clipboard.setStringAsync(inviteLink);
-			Alert.alert(
-				"Copiado!",
-				"Link de convite copiado para área de transferência",
-			);
+			Toast.show({
+				type: "success",
+				text1: "Copiado!",
+				text2: "Link de convite copiado para área de transferência",
+				position: "bottom",
+				visibilityTime: 2000,
+			});
 		} catch (error) {
-			Alert.alert("Error", "Falha ao copiar link");
+			Toast.show({
+				type: "error",
+				text1: "Error",
+				text2: "Falha ao copiar link",
+				position: "bottom",
+			});
 		}
 	};
 
@@ -125,17 +143,13 @@ export default function GroupInvitePage() {
 		<View className="flex-1 bg-neutral-950">
 			{/* Header */}
 			<View className="pt-16 pb-6 px-6 border-b border-neutral-800">
-				<Pressable onPress={() => router.back()} className="mb-4">
-					<Ionicons name="arrow-back" size={24} color="white" />
-				</Pressable>
-
 				<Text className="text-2xl font-bold text-white">Convidar Bros</Text>
 				<Text className="text-neutral-400 mt-1">{group?.name}</Text>
 			</View>
 
 			<ScrollView className="flex-1 px-6">
 				{/* Invite Link Section */}
-				<View className="mt-6 space-y-4">
+				<View className="mt-6 gap-y-4">
 					<Text className="text-white font-semibold text-lg">
 						Link de Convite
 					</Text>
@@ -151,9 +165,9 @@ export default function GroupInvitePage() {
 							</Text>
 						</View>
 
-						<View className="flex-row space-x-3">
+						<View className="flex-row flex gap-4">
 							<Pressable
-								className="flex-1 bg-yellow-400 p-3 rounded-xl flex-row items-center justify-center active:bg-yellow-500"
+								className="flex-1 bg-yellow-400 p-3 rounded-xl flex-row items-center justify-center active:bg-yellow-400"
 								onPress={copyInviteLink}
 							>
 								<Ionicons name="copy-outline" size={18} color="black" />
@@ -174,13 +188,13 @@ export default function GroupInvitePage() {
 				</View>
 
 				{/* Invite by Username */}
-				<View className="mt-8 space-y-4">
+				<View className="mt-8 gap-4">
 					<Text className="text-white font-semibold text-lg">
 						Convidar por Username
 					</Text>
 
-					<View className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4">
-						<View className="flex-row space-x-3">
+					<View className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 ">
+						<View className="flex-row gap-x-3">
 							<View className="flex-1 bg-neutral-800 rounded-xl">
 								<TextInput
 									className="text-white text-base p-3"
@@ -196,7 +210,7 @@ export default function GroupInvitePage() {
 								className={`px-6 py-3 rounded-xl items-center justify-center ${
 									loading || !username.trim()
 										? "bg-neutral-700"
-										: "bg-yellow-400 active:bg-yellow-500"
+										: "bg-yellow-400 active:bg-yellow-400"
 								}`}
 								onPress={handleInviteByUsername}
 								disabled={loading || !username.trim()}
@@ -213,7 +227,7 @@ export default function GroupInvitePage() {
 
 				{/* Group Members */}
 				<View className="mt-8 mb-8 space-y-4">
-					<View className="flex-row items-center justify-between">
+					<View className="flex-row items-center justify-between mb-4">
 						<Text className="text-white font-semibold text-lg">
 							Membros do Grupo
 						</Text>

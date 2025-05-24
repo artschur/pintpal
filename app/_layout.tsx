@@ -2,6 +2,7 @@ import "../global.css";
 
 import { Stack } from "expo-router";
 
+import Toast from "react-native-toast-message";
 import { AuthProvider } from "@/context/supabase-provider";
 import { useColorScheme } from "@/lib/useColorScheme";
 import { colors } from "@/constants/colors";
@@ -53,6 +54,7 @@ export default function AppLayout() {
 					}}
 				/>
 			</Stack>
+			<Toast />
 		</AuthProvider>
 	);
 }

@@ -26,11 +26,14 @@ export const Group = ({
 
 	return (
 		<Pressable
-			className={`overflow-hidden border border-neutral-800 rounded-xl ${variant === "grid" ? "w-full" : "w-[200px] mr-3"}`}
+			className={`overflow-hidden border border-neutral-800 rounded-xl h-40 ${variant === "grid" ? "w-full" : "w-[200px] mr-3"}`}
 			onPress={() => onPress(group)}
 		>
-			<BlurView intensity={50} tint="dark" className="p-4 rounded-xl">
-				{/* Avatar display for both variants */}
+			<BlurView
+				intensity={50}
+				tint="dark"
+				className="p-4 rounded-xl h-full flex flex-col justify-between"
+			>
 				<View className="flex-row mb-3 justify-center">
 					{group.members.slice(0, 3).map((member, index) => (
 						<Image
@@ -78,7 +81,7 @@ export const Group = ({
 
 				{showJoinButton && (
 					<Pressable
-						className="mt-3 py-2 px-4 bg-yellow-500 rounded-lg items-center"
+						className="mt-3 py-2 px-4 bg-yellow-400 rounded-lg items-center"
 						onPress={(e) => {
 							e.stopPropagation();
 							onJoin?.(group);

@@ -110,7 +110,7 @@ export default function CreateGroupPage() {
 						className={`p-4 rounded-2xl items-center ${
 							loading || !name.trim()
 								? "bg-neutral-800"
-								: "bg-yellow-400 active:bg-yellow-500"
+								: "bg-yellow-400 active:bg-yellow-400"
 						}`}
 						onPress={handleSubmit}
 						disabled={loading || !name.trim()}

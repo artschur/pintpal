@@ -1,137 +1,103 @@
 import { supabase } from "@/config/supabase";
 
-export interface GroupInvite {
-	id: string;
-	group_id: string;
-	invited_by: string;
-	invited_user_id?: string;
-	invited_username?: string;
-	status: "pending" | "accepted" | "declined" | "expired";
-	invited_at: string;
-	expires_at: string;
-}
-
-export async function sendGroupInviteByUsername(
-	groupId: string,
-	username: string,
-	invitedBy: string,
-): Promise<GroupInvite> {
-	// First, find the user by username
-	const { data: profile, error: profileError } = await supabase
-		.from("profiles")
-		.select("id")
-		.eq("username", username)
-		.single();
-
-	if (profileError || !profile) {
-		throw new Error("Usuário não encontrado");
-	}
-
-	// Check if user is already a member
-	const { data: existingMember } = await supabase
-		.from("group_members")
-		.select("id")
-		.eq("group_id", groupId)
-		.eq("profile_id", profile.id)
-		.single();
-
-	if (existingMember) {
-		throw new Error("Usuário já é membro do grupo");
-	}
-
-	// Check if invite already exists
-	const { data: existingInvite } = await supabase
-		.from("group_invites")
-		.select("id")
-		.eq("group_id", groupId)
-		.eq("invited_user_id", profile.id)
-		.eq("status", "pending")
-		.single();
-
-	if (existingInvite) {
-		throw new Error("Convite já enviado para este usuário");
-	}
-
-	// Create the invite
-	const { data, error } = await supabase
-		.from("group_invites")
-		.insert({
-			group_id: groupId,
-			invited_by: invitedBy,
-			invited_user_id: profile.id,
-			invited_username: username,
-			status: "pending",
-			expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-		})
-		.select()
-		.single();
-
-	if (error) throw error;
-	return data;
+function generateToken(): string {
+	return (
+		Math.random().toString(36).substring(2, 15) +
+		Math.random().toString(36).substring(2, 15)
+	);
 }
 
 export async function createInviteLink(groupId: string): Promise<string> {
-	// Generate a shareable link - you might want to create a unique token
-	// For now, using a simple approach
-	const baseUrl = "https://your-app.com"; // Replace with your app's deep link
-	return `${baseUrl}/join-group/${groupId}`;
-}
-
-export async function getPendingInvites(
-	profileId: string,
-): Promise<GroupInvite[]> {
-	const { data, error } = await supabase
-		.from("group_invites")
-		.select(
-			`
-			*,
-			groups (
-				id,
-				name,
-				description
-			),
-			inviter:profiles!invited_by (
-				id,
-				username,
-				avatar_url
-			)
-		`,
-		)
-		.eq("invited_user_id", profileId)
-		.eq("status", "pending")
-		.gt("expires_at", new Date().toISOString());
-
-	if (error) throw error;
-	return data;
-}
-
-export async function respondToInvite(
-	inviteId: string,
-	status: "accepted" | "declined",
-	profileId: string,
-): Promise<void> {
-	const { data: invite, error: inviteError } = await supabase
-		.from("group_invites")
-		.update({
-			status,
-			responded_at: new Date().toISOString(),
-		})
-		.eq("id", inviteId)
-		.eq("invited_user_id", profileId)
-		.select()
+	const { data: group } = await supabase
+		.from("groups")
+		.select("invite_token")
+		.eq("id", groupId)
 		.single();
 
-	if (inviteError) throw inviteError;
+	let token = group?.invite_token;
 
-	// If accepted, add user to group_members
-	if (status === "accepted") {
-		const { error: memberError } = await supabase.from("group_members").insert({
-			group_id: invite.group_id,
-			profile_id: profileId,
-			role: "member",
-			points: 0,
-		});
+	if (!token) {
+		token = generateToken();
 
-		if (memberError) throw memberError;
+		await supabase
+			.from("groups")
+			.update({ invite_token: token })
+			.eq("id", groupId);
 	}
+
+	return `https://beerbros.com/invite/${token}`;
+}
+
+export async function getGroupByToken(token: string) {
+	console.log("from funct", token);
+	const { data, error } = await supabase
+		.from("groups")
+		.select(
+			`
+      id,
+      name,
+      description,
+      invite_active,
+      member_limit,
+      group_members(count)
+
+    `,
+		)
+		.eq("invite_token", token)
+		.single();
+
+	console.log(data);
+	if (error || !data) {
+		throw new Error("Grupo não encontrado");
+	}
+
+	if (!data.invite_active) {
+		throw new Error("Convites desabilitados para este grupo");
+	}
+
+	const memberCount = data.group_members[0]?.count || 0;
+	if (memberCount >= data.member_limit) {
+		throw new Error("Grupo está cheio (máximo 20 membros)");
+	}
+
+	return {
+		...data,
+		memberCount,
+	};
+}
+
+export async function joinGroupViaInvite(token: string, userId: string) {
+	const group = await getGroupByToken(token);
+
+	const { data: existingMember } = await supabase
+		.from("group_members")
+		.select("id")
+		.eq("group_id", group.id)
+		.eq("profile_id", userId)
+		.single();
+
+	if (existingMember) {
+		throw new Error("Você já é membro deste grupo");
+	}
+
+	// Add user to group
+	const { error } = await supabase.from("group_members").insert({
+		group_id: group.id,
+		profile_id: userId,
+		role: "member",
+		points: 0,
+	});
+
+	if (error) throw error;
+
+	return group;
+}
+
+export async function toggleGroupInvite(groupId: string, active: boolean) {
+	const { error } = await supabase
+		.from("groups")
+		.update({ invite_active: active })
+		.eq("id", groupId);
+
+	if (error) throw error;
 }

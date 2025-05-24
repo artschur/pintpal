@@ -5,7 +5,7 @@ import {
 	useEffect,
 	useState,
 } from "react";
-import { SplashScreen, useRouter } from "expo-router";
+import { SplashScreen, useRouter, usePathname } from "expo-router";
 
 import { Session } from "@supabase/supabase-js";
 
@@ -35,6 +35,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 	const [initialized, setInitialized] = useState(false);
 	const [session, setSession] = useState<Session | null>(null);
 	const router = useRouter();
+	const pathname = usePathname();
 
 	const signUp = async (email: string, password: string, username: string) => {
 		const { data, error } = await supabase.auth.signUp({
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 			password,
 			options: {
 				data: {
-					username, // This will be saved as user_metadata
+					username,
 				},
 			},
 		});
@@ -105,14 +106,36 @@ export function AuthProvider({ children }: PropsWithChildren) {
 	useEffect(() => {
 		if (initialized) {
 			SplashScreen.hideAsync();
+
+			// Check if user is on an invite page before redirecting
+			const isInvitePage = pathname?.startsWith("/invite/");
+
 			if (session) {
-				router.replace("/");
+				// User is authenticated - redirect to main app if they're on welcome/auth pages
+				if (
+					pathname === "/welcome" ||
+					pathname === "/sign-in" ||
+					pathname === "/sign-up"
+				) {
+					router.replace("/(protected)/(tabs)");
+				}
 			} else {
-				router.replace("/welcome");
+				// User is not authenticated - only redirect if NOT on invite page
+				if (
+					!isInvitePage &&
+					pathname !== "/welcome" &&
+					pathname !== "/sign-in" &&
+					pathname !== "/sign-up"
+				) {
+					console.log(
+						"No session, redirecting to welcome. Current path:",
+						pathname,
+					);
+					router.replace("/welcome");
+				}
 			}
 		}
-		// eslint-disable-next-line
-	}, [initialized, session]);
+	}, [initialized, session, pathname]);
 
 	return (
 		<AuthContext.Provider
