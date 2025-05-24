@@ -28,6 +28,7 @@ export default function GroupInvitePage() {
 	const { id: groupId } = useLocalSearchParams<{ id: string }>();
 	const router = useRouter();
 
+	console.log(groupId);
 	const [group, setGroup] = useState<Group | null>(null);
 	const [members, setMembers] = useState<GroupMemberWithProfile[]>([]);
 	const [username, setUsername] = useState("");

@@ -34,7 +34,7 @@ export default function CreateGroupPage() {
 
 			const newGroup = await createGroup({
 				name: name.trim(),
-				description: description.trim() || null,
+				description: description.trim() || "",
 				created_by: session.user.id,
 			});
 

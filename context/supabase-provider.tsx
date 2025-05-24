@@ -108,7 +108,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
 			SplashScreen.hideAsync();
 
 			// Check if user is on an invite page before redirecting
-			const isInvitePage = pathname?.startsWith("/invite/");
+			const isInvitePage =
+				pathname?.startsWith("/invite/") ||
+				pathname?.includes("/group/invite/");
 
 			if (session) {
 				// User is authenticated - redirect to main app if they're on welcome/auth pages
