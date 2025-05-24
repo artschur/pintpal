@@ -157,7 +157,7 @@ export default function GroupFeed() {
 		return (
 			<View className="flex-1 items-center justify-center bg-dark-background">
 				<View className="h-8 w-8 rounded-full border-2 border-yellow-500 border-t-transparent animate-spin" />
-				<Text className="text-white text-base mt-4">Loading groups...</Text>
+				<Text className="text-white text-base mt-4">Carregando grupos...</Text>
 			</View>
 		);
 	}
@@ -183,7 +183,7 @@ export default function GroupFeed() {
 						</Text>
 					</View>
 					<Pressable onPress={() => router.push("/create-group")}>
-						<Text className="text-yellow-500">Create Group</Text>
+						<Text className="text-yellow-400">Criar grupo</Text>
 					</Pressable>
 				</View>
 
@@ -218,11 +218,11 @@ export default function GroupFeed() {
 				<View className="flex-row items-center justify-between mb-4">
 					<View className="flex-row items-center">
 						<Text className="text-white text-xl font-bold ml-2">
-							🌎 descobrir grupos
+							🌎 descobrir bros
 						</Text>
 					</View>
 					<Pressable>
-						<Text className="text-yellow-500">See All</Text>
+						<Text className="text-yellow-400">Ver todos</Text>
 					</Pressable>
 				</View>
 
@@ -242,7 +242,7 @@ export default function GroupFeed() {
 						{otherGroups.map((group) => (
 							<Pressable
 								key={group.id}
-								className="overflow-hidden rounded-xl"
+								className="overflow-hidden rounded-xl border border-neutral-800"
 								onPress={() => handleGroupPress(group)}
 							>
 								<BlurView intensity={20} tint="dark" className="p-4 rounded-xl">
@@ -274,7 +274,7 @@ export default function GroupFeed() {
 										<Text className="text-white text-lg font-bold">
 											{group.name}
 										</Text>
-										<View className="flex-row items-center bg-opacity-10 bg-neutral-200 px-2 py-1 rounded-full">
+										<View className="flex-row items-center bg-neutral-100 px-2 py-1 rounded-full">
 											<MaterialIcons name="people" size={16} color="#000" />
 											<Text className="text-neutral-800 text-xs ml-1">
 												{group.members.length}
@@ -293,18 +293,18 @@ export default function GroupFeed() {
 
 									<View className="flex-row justify-between items-center">
 										<Pressable
-											className="bg-yellow-400 py-2 px-4 rounded-lg flex-1 mr-3"
+											className="bg-neutral-950 py-2 rounded-lg flex-1 mr-3"
 											onPress={(e) => {
 												e.stopPropagation();
 												handleJoinGroup(group);
 											}}
 										>
-											<Text className="text-black font-bold text-center">
-												Join Group
+											<Text className="font-semibold border-neutral-800 border text-neutral-300 bg-neutral-900 w-36 p-2 rounded-xl text-center">
+												Entrar no grupo
 											</Text>
 										</Pressable>
 
-										<Pressable className="w-10 h-10 rounded-full bg-opacity-10 bg-neutral-200 justify-center items-center">
+										<Pressable className="w-10 h-10 rounded-full bg-neutral-100 justify-center items-center">
 											<MaterialIcons
 												name="arrow-forward"
 												size={20}

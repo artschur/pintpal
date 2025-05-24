@@ -26,7 +26,7 @@ export const Group = ({
 
 	return (
 		<Pressable
-			className={`overflow-hidden rounded-xl ${variant === "grid" ? "w-full" : "w-[200px] mr-3"}`}
+			className={`overflow-hidden border border-neutral-800 rounded-xl ${variant === "grid" ? "w-full" : "w-[200px] mr-3"}`}
 			onPress={() => onPress(group)}
 		>
 			<BlurView intensity={50} tint="dark" className="p-4 rounded-xl">

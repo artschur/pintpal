@@ -28,6 +28,7 @@
 		"expo": "~53.0.8",
 		"expo-blur": "~14.1.4",
 		"expo-camera": "~16.1.6",
+		"expo-clipboard": "~7.1.4",
 		"expo-constants": "~17.1.6",
 		"expo-dev-client": "~5.1.8",
 		"expo-image": "~2.1.7",

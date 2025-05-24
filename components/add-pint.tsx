@@ -37,23 +37,11 @@ export function AddPintButton() {
 
 	return (
 		<TouchableOpacity
-			style={{
-				backgroundColor: colors.dark.accent,
-				padding: 16,
-				borderRadius: 8,
-				alignItems: "center",
-				marginVertical: 8,
-			}}
+			className="bg-yellow-300 border border-neutral-800 rounded-lg text-center text-xl p-4 m-2"
 			onPress={() => router.push("/(protected)/show-pint")}
 		>
-			<Text
-				style={{
-					color: colors.dark.background,
-					fontSize: 16,
-					fontWeight: "bold",
-				}}
-			>
-				Adicionar Pint
+			<Text className="text-neutral-800 font-semibold text-lg">
+				Adicionar Drink 🍻
 			</Text>
 		</TouchableOpacity>
 	);

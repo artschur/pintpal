@@ -8,23 +8,19 @@ import GroupFeed from "@/components/groups-feed";
 
 export default function Home() {
 	return (
-		<View style={{ flex: 1, backgroundColor: colors.dark.background }}>
+		<View
+			style={{ flex: 1, backgroundColor: colors.dark.background }}
+			className="px-3"
+		>
 			<SafeAreaView style={{ flex: 1 }}>
 				{/* Container for AddPintButton */}
-				<View
-					style={{
-						paddingHorizontal: 16,
-						paddingTop: 8,
-						backgroundColor: colors.dark.background,
-						zIndex: 1, // Ensure button stays on top
-					}}
-				>
-					<AddPintButton />
-				</View>
 
 				{/* Feed container */}
 				<View style={{ flex: 1 }}>
 					<GroupFeed />
+				</View>
+				<View className="w-full mb-6">
+					<AddPintButton />
 				</View>
 			</SafeAreaView>
 		</View>

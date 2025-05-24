@@ -61,7 +61,7 @@ export default function GroupView({ groupId }: Props) {
 		return (
 			<View className="flex-1 justify-center items-center bg-neutral-900">
 				<ActivityIndicator size="large" color="#FFCA28" />
-				<Text className="text-yellow-500 mt-2">Loading group details...</Text>
+				<Text className="text-yellow-400 mt-2">Loading group details...</Text>
 			</View>
 		);
 	}
@@ -69,7 +69,7 @@ export default function GroupView({ groupId }: Props) {
 	if (!members || members.length === 0) {
 		return (
 			<View className="flex-1 justify-center items-center bg-neutral-900">
-				<Text className="text-yellow-500">
+				<Text className="text-yellow-400">
 					Group not found or has no members.
 				</Text>
 			</View>

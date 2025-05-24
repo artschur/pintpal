@@ -27,13 +27,13 @@ export function ProtectedHeader() {
 				flexDirection: "row",
 				alignItems: "center",
 				justifyContent: "space-between",
-				paddingHorizontal: 16,
 				paddingTop: 64,
 				paddingBottom: 16,
 				backgroundColor: "#000",
 			}}
+			className="px-4"
 		>
-			<Text style={{ fontSize: 22, fontWeight: "bold" }}>BeerBro</Text>
+			<Text className="text-xl text-white font-bold px-4">BeerBro</Text>
 			<TouchableOpacity onPress={() => router.push("/(protected)/profile-pic")}>
 				<Image
 					source={{
