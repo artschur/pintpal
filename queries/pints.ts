@@ -174,14 +174,16 @@ export async function CreatePost({
 	location,
 	imageUrl,
 	groupId,
+	points = 10,
 }: {
 	userId: string;
 	description: string;
 	location: string;
 	imageUrl: string;
 	groupId: string;
+	points: number;
 }) {
-	const { data, error } = await supabase
+	const postInsert = await supabase
 		.from("posts")
 		.insert([
 			{
@@ -195,12 +197,19 @@ export async function CreatePost({
 		.eq("group", groupId)
 		.select("*");
 
-	if (error) {
-		console.error("Error creating post:", error);
+	if (postInsert.error) {
+		console.error("Error creating post:", postInsert.error);
 		return null;
 	}
 
-	return data[0];
+	let { error } = await supabase.rpc("update_user_points", {
+		groupid: groupId,
+		pointvalue: points,
+		userid: userId,
+	});
+	if (error) console.error("error calling update points RPC: ", error);
+
+	return postInsert.data[0];
 }
 
 export async function GetGroupPints(groupId: string) {

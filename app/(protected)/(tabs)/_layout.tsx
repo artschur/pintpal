@@ -1,6 +1,7 @@
 import React from "react";
 import { View } from "react-native";
 import { Tabs } from "expo-router";
+import { Home, Beer, User } from "lucide-react-native";
 
 import { useColorScheme } from "@/lib/useColorScheme";
 import { colors } from "@/constants/colors";
@@ -20,6 +21,9 @@ export default function TabsLayout() {
 							colorScheme === "dark"
 								? colors.dark.background
 								: colors.light.background,
+						borderTopWidth: 0, // Removes top border
+						elevation: 0, // Removes shadow on Android
+						shadowOpacity: 0, // Removes shadow on iOS
 					},
 					tabBarActiveTintColor:
 						colorScheme === "dark"
@@ -28,9 +32,27 @@ export default function TabsLayout() {
 					tabBarShowLabel: false,
 				}}
 			>
-				<Tabs.Screen name="index" options={{ title: "Home" }} />
-				<Tabs.Screen name="settings" options={{ title: "Settings" }} />
-				<Tabs.Screen name="add-pint" options={{ title: "Add Pint" }} />
+				<Tabs.Screen
+					name="index"
+					options={{
+						title: "Home",
+						tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
+					}}
+				/>
+				<Tabs.Screen
+					name="add-pint"
+					options={{
+						title: "Add Pint",
+						tabBarIcon: ({ color, size }) => <Beer size={size} color={color} />,
+					}}
+				/>
+				<Tabs.Screen
+					name="settings"
+					options={{
+						title: "Settings",
+						tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
+					}}
+				/>
 			</Tabs>
 		</View>
 	);

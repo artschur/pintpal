@@ -9,7 +9,6 @@ import {
 	ActivityIndicator,
 	Alert,
 	TouchableOpacity,
-	ScrollView,
 } from "react-native";
 import { Image } from "expo-image";
 import { Text } from "@/components/ui/text";
@@ -48,6 +47,7 @@ export default function ShowPint() {
 	const [uploading, setUploading] = useState(false);
 	const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 	const [loadingGroups, setLoadingGroups] = useState(true);
+	const [showGroupPicker, setShowGroupPicker] = useState(false);
 
 	const resetState = () => {
 		setBackImage(null);
@@ -158,6 +158,7 @@ export default function ShowPint() {
 				location,
 				imageUrl: `${backImageUrl},${frontImageUrl}`,
 				groupId: selectedGroupId,
+				points: quantity * 10,
 			});
 
 			if (post) {
@@ -212,7 +213,16 @@ export default function ShowPint() {
 				{/* Group Selector - Bottom left */}
 				<TouchableOpacity
 					style={styles.groupSelectorButton}
-					disabled={userGroups.length <= 1}
+					onPress={() => {
+						console.log(
+							"Group button pressed, userGroups length:",
+							userGroups.length,
+						);
+						if (userGroups.length > 1) {
+							setShowGroupPicker(true);
+						}
+					}}
+					activeOpacity={0.7}
 				>
 					<BlurView
 						intensity={30}
@@ -225,6 +235,14 @@ export default function ShowPint() {
 							<Text style={styles.groupSelectorText} numberOfLines={1}>
 								{selectedGroup ? selectedGroup.name : "Select Group"}
 							</Text>
+							{userGroups.length > 1 && (
+								<MaterialIcons
+									name="keyboard-arrow-down"
+									size={16}
+									color="white"
+									style={{ marginLeft: 4 }}
+								/>
+							)}
 						</View>
 					</BlurView>
 				</TouchableOpacity>
@@ -248,6 +266,60 @@ export default function ShowPint() {
 				<Text style={styles.cameraInstructions}>
 					Tire sua foto do {facing === "back" ? "drink🍻" : "rosto🤳🏻"}
 				</Text>
+
+				{/* Group Picker Modal - NOW INSIDE CAMERA VIEW */}
+				{showGroupPicker && (
+					<View style={styles.modalOverlay}>
+						<TouchableOpacity
+							style={styles.modalBackdrop}
+							onPress={() => setShowGroupPicker(false)}
+							activeOpacity={1}
+						>
+							<TouchableOpacity
+								activeOpacity={1}
+								onPress={(e) => e.stopPropagation()}
+							>
+								<BlurView
+									intensity={50}
+									tint="dark"
+									style={styles.modalContainer}
+									className="border border-neutral-800"
+								>
+									<View style={styles.modalContent}>
+										<Text style={styles.modalTitle}>Select Group</Text>
+										<View style={styles.groupPickerContainer}>
+											<Picker
+												mode="dropdown"
+												selectedValue={selectedGroupId}
+												onValueChange={(value) => {
+													setSelectedGroupId(value);
+													const group = userGroups.find((g) => g.id === value);
+													setSelectedGroup(group || null);
+													setShowGroupPicker(false);
+												}}
+											>
+												{userGroups.map((group) => (
+													<Picker.Item
+														key={group.id}
+														label={group.name}
+														value={group.id}
+													/>
+												))}
+											</Picker>
+										</View>
+										<TouchableOpacity
+											style={styles.modalCloseButton}
+											className="bg-neutral-900  border border-neutral-800"
+											onPress={() => setShowGroupPicker(false)}
+										>
+											<Text style={styles.modalCloseText}>Cancel</Text>
+										</TouchableOpacity>
+									</View>
+								</BlurView>
+							</TouchableOpacity>
+						</TouchableOpacity>
+					</View>
+				)}
 			</View>
 		);
 	}
@@ -283,19 +355,6 @@ export default function ShowPint() {
 
 			{/* Bottom Controls with Half-Width Pickers */}
 			<BlurView intensity={40} tint="dark" style={styles.bottomControls}>
-				{/* Group Selector */}
-				<View style={styles.controlRow}>
-					<View style={styles.controlLabelContainer}>
-						<MaterialIcons name="group" size={18} color="#FFCA28" />
-						<Text style={styles.controlLabel}>Group</Text>
-					</View>
-					<View style={styles.controlValue}>
-						<Text style={styles.controlValueText} numberOfLines={1}>
-							{selectedGroup ? selectedGroup.name : "Select Group"}
-						</Text>
-					</View>
-				</View>
-
 				{/* Half-Width Picker Controls */}
 				<View style={styles.pickersRow}>
 					{/* Quantity Picker */}
@@ -337,31 +396,6 @@ export default function ShowPint() {
 					</View>
 				</View>
 
-				{/* Group Picker (if multiple groups) - Full width */}
-				{userGroups.length > 1 && (
-					<View style={styles.fullWidthPickerContainer}>
-						<Text style={styles.pickerLabel}>Group</Text>
-						<Picker
-							selectedValue={selectedGroupId}
-							onValueChange={(value) => {
-								setSelectedGroupId(value);
-								const group = userGroups.find((g) => g.id === value);
-								setSelectedGroup(group || null);
-							}}
-							style={styles.picker}
-						>
-							{userGroups.map((group) => (
-								<Picker.Item
-									key={group.id}
-									label={group.name}
-									value={group.id}
-									color={colors.dark.foreground}
-								/>
-							))}
-						</Picker>
-					</View>
-				)}
-
 				{/* Share Button */}
 				<TouchableOpacity
 					style={styles.shareButton}
@@ -398,11 +432,6 @@ const styles = StyleSheet.create({
 		height: 44,
 		borderRadius: 22,
 		backgroundColor: "rgba(0, 0, 0, 0.7)",
-	},
-	backButtonBlur: {
-		width: 44,
-		height: 44,
-		borderRadius: 22,
 		justifyContent: "center",
 		alignItems: "center",
 	},
@@ -523,51 +552,17 @@ const styles = StyleSheet.create({
 		borderTopRightRadius: 20,
 		overflow: "hidden",
 	},
-	controlRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		marginBottom: 16,
-		paddingVertical: 8,
-	},
-	controlLabelContainer: {
-		flexDirection: "row",
-		alignItems: "center",
-	},
-	controlLabel: {
-		color: "white",
-		fontSize: 16,
-		fontWeight: "500",
-		marginLeft: 8,
-	},
-	controlValue: {
-		flexDirection: "row",
-		alignItems: "center",
-	},
-	controlValueText: {
-		color: "rgba(255, 255, 255, 0.8)",
-		fontSize: 16,
-		marginRight: 4,
-		maxWidth: 150,
-	},
-	// Updated picker styles for half-width layout
+	// Updated picker styles for three-column layout
 	pickersRow: {
 		flexDirection: "row",
 		marginBottom: 20,
-		gap: 10,
+		gap: 8,
 	},
 	pickerContainer: {
 		backgroundColor: colors.dark.card,
 		borderRadius: 12,
 		overflow: "hidden",
 		flex: 1,
-	},
-	fullWidthPickerContainer: {
-		backgroundColor: colors.dark.card,
-		borderRadius: 12,
-		overflow: "hidden",
-		marginBottom: 12,
-		width: "100%",
 	},
 	pickerLabel: {
 		color: "white",
@@ -615,5 +610,54 @@ const styles = StyleSheet.create({
 		color: "white",
 		fontSize: 18,
 		marginTop: 20,
+	},
+	modalOverlay: {
+		position: "absolute",
+		top: 0,
+		left: 0,
+		right: 0,
+		bottom: 0,
+		backgroundColor: "rgba(0, 0, 0, 0.7)",
+		justifyContent: "center",
+		alignItems: "center",
+		zIndex: 10000,
+	},
+	modalBackdrop: {
+		flex: 1,
+		width: "100%",
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	modalContainer: {
+		borderRadius: 20,
+		overflow: "hidden",
+		margin: 40,
+		width: 300,
+	},
+	modalContent: {
+		padding: 20,
+	},
+	modalTitle: {
+		color: "white",
+		fontSize: 18,
+		fontWeight: "600",
+		textAlign: "center",
+		marginBottom: 20,
+	},
+	groupPickerContainer: {
+		backgroundColor: colors.dark.card,
+		borderRadius: 12,
+		overflow: "hidden",
+		marginBottom: 20,
+	},
+	modalCloseButton: {
+		borderRadius: 12,
+		paddingVertical: 12,
+		alignItems: "center",
+	},
+	modalCloseText: {
+		color: "white",
+		fontSize: 16,
+		fontWeight: "500",
 	},
 });

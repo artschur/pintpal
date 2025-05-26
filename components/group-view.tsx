@@ -47,21 +47,18 @@ const { width, height } = Dimensions.get("window");
 const imageSize = (width - 60) / 3; // 3 images per row with padding
 
 export default function GroupView({ groupId }: Props) {
-	const { session } = useAuth();
 	const [group, setGroup] = useState<GroupWithMembers | null>(null);
 	const [members, setMembers] = useState<GroupMemberWithProfile[]>([]);
 	const [posts, setPosts] = useState<GroupPost[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [selectedPost, setSelectedPost] = useState<GroupPost | null>(null);
 	const [modalVisible, setModalVisible] = useState(false);
-	const router = useRouter();
 
 	useEffect(() => {
 		const fetchGroupDetails = async () => {
 			if (!groupId) return;
 
 			try {
-				// Fetch group data, members, and posts in parallel
 				const [groupData, groupMembers, groupPosts] = await Promise.all([
 					getGroupById(groupId),
 					getGroupMembers(groupId),
@@ -418,19 +415,18 @@ export default function GroupView({ groupId }: Props) {
 					}}
 				>
 					<View style={{ padding: 20, alignItems: "center" }}>
-						{/* Group Icon */}
-						<View
-							style={{
-								width: 80,
-								height: 80,
-								borderRadius: 20,
-								backgroundColor: "#FBBF24",
-								justifyContent: "center",
-								alignItems: "center",
-								marginBottom: 16,
-							}}
-						>
-							<Text style={{ fontSize: 40 }}>🍻</Text>
+						<View className="w-32 h-32 flex items-center justify-center border border-yellow-400 rounded-3xl bg-yellow-300 mb-6">
+							<Text
+								style={{
+									fontSize: 48,
+									lineHeight: 48,
+									textAlign: "center",
+									includeFontPadding: false,
+								}}
+								className="text-yellow-800 font-bold"
+							>
+								{group.name.charAt(0).toUpperCase()}
+							</Text>
 						</View>
 
 						{/* Group Name */}
