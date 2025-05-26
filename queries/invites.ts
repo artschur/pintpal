@@ -29,7 +29,6 @@ export async function createInviteLink(groupId: string): Promise<string> {
 }
 
 export async function getGroupByToken(token: string) {
-	console.log("from funct", token);
 	const { data, error } = await supabase
 		.from("groups")
 		.select(
@@ -46,7 +45,6 @@ export async function getGroupByToken(token: string) {
 		.eq("invite_token", token)
 		.single();
 
-	console.log(data);
 	if (error || !data) {
 		throw new Error("Grupo não encontrado");
 	}

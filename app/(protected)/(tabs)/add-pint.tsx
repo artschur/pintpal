@@ -56,7 +56,25 @@ export default function ShowPint() {
 		setQuantity(1);
 		setDrinkType(DRINK_TYPES[0]);
 		setUploading(false);
-		setSelectedGroupId(null);
+		// Keep the selected group for convenience
+	};
+
+	const resetToCamera = () => {
+		Alert.alert(
+			"Começar de novo?",
+			"Você perderá as fotos tiradas. Tem certeza?",
+			[
+				{
+					text: "Cancelar",
+					style: "cancel",
+				},
+				{
+					text: "Sim, começar de novo",
+					style: "destructive",
+					onPress: resetState,
+				},
+			],
+		);
 	};
 
 	useEffect(() => {
@@ -69,7 +87,7 @@ export default function ShowPint() {
 			const userGroups = await getUserGroups(session?.user.id);
 			if (userGroups) {
 				setUserGroups(userGroups);
-				if (userGroups.length > 0) {
+				if (userGroups.length > 0 && !selectedGroupId) {
 					setSelectedGroup(userGroups[0]);
 					setSelectedGroupId(userGroups[0].id);
 				}
@@ -86,7 +104,7 @@ export default function ShowPint() {
 			}
 			setLoadingGroups(false);
 		})();
-	}, []);
+	}, [selectedGroupId]);
 
 	const takePicture = async () => {
 		const photo = await ref.current?.takePictureAsync({
@@ -111,6 +129,15 @@ export default function ShowPint() {
 
 	const handleShare = async () => {
 		if (!backImage || !frontImage || !location || !session?.user?.id) return;
+
+		if (!selectedGroupId) {
+			return Alert.alert(
+				"Group Required",
+				"Please select a group to share your pint.",
+				[{ text: "OK", onPress: () => {} }],
+			);
+		}
+
 		setUploading(true);
 
 		try {
@@ -124,16 +151,6 @@ export default function ShowPint() {
 				console.error("Error uploading images:", error);
 				return;
 			}
-
-			if (!selectedGroupId) {
-				return Alert.alert(
-					"Group Required",
-					"Please select a group to share your pint.",
-					[{ text: "OK", onPress: () => {} }],
-				);
-			}
-
-			console.log(selectedGroupId);
 
 			const post = await CreatePost({
 				userId: session.user.id,
@@ -237,6 +254,15 @@ export default function ShowPint() {
 
 	return (
 		<View style={styles.container}>
+			{/* Back Button */}
+			<TouchableOpacity
+				style={styles.backButton}
+				onPress={resetToCamera}
+				activeOpacity={0.8}
+			>
+				<Ionicons name="arrow-back" size={24} color="white" />
+			</TouchableOpacity>
+
 			{/* Main Image Preview */}
 			<View style={styles.previewContainer}>
 				<Image source={{ uri: backImage }} style={styles.mainPreview} />
@@ -361,6 +387,24 @@ const styles = StyleSheet.create({
 	camera: {
 		flex: 1,
 		width: "100%",
+	},
+	// Back Button Styles
+	backButton: {
+		position: "absolute",
+		top: 60,
+		left: 20,
+		zIndex: 10000,
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		backgroundColor: "rgba(0, 0, 0, 0.7)",
+	},
+	backButtonBlur: {
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		justifyContent: "center",
+		alignItems: "center",
 	},
 	groupSelectorButton: {
 		position: "absolute",
@@ -510,13 +554,13 @@ const styles = StyleSheet.create({
 	pickersRow: {
 		flexDirection: "row",
 		marginBottom: 20,
-		gap: 1, // Space between the two pickers
+		gap: 10,
 	},
 	pickerContainer: {
 		backgroundColor: colors.dark.card,
 		borderRadius: 12,
 		overflow: "hidden",
-		width: "50%",
+		flex: 1,
 	},
 	fullWidthPickerContainer: {
 		backgroundColor: colors.dark.card,
@@ -530,15 +574,14 @@ const styles = StyleSheet.create({
 		fontSize: 12,
 		fontWeight: "600",
 		paddingHorizontal: 12,
-		paddingTop: 6, // Closer to picker
-		paddingBottom: 2, // Closer to picker
+		paddingTop: 6,
+		paddingBottom: 2,
 	},
 	picker: {
 		backgroundColor: colors.dark.card,
 		color: colors.dark.foreground,
-		marginTop: -4, // Bring picker closer to label
+		marginTop: -4,
 	},
-
 	shareButton: {
 		backgroundColor: "#FFCA28",
 		borderRadius: 16,

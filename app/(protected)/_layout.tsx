@@ -14,11 +14,9 @@ export default function ProtectedLayout() {
 		return null;
 	}
 
-	// Allow invite pages even without session
 	const isGroupInvitePage = pathname?.includes("/group/invite/");
 
 	if (!session && !isGroupInvitePage) {
-		console.log("No session, redirecting to welcome");
 		return <Redirect href="/welcome" />;
 	}
 	return (
@@ -36,7 +34,7 @@ export default function ProtectedLayout() {
 
 			{/* Group Invite Page */}
 			<Stack.Screen
-				name="group/invite/[id]/invite"
+				name="group/invite/[id]"
 				options={{
 					headerShown: true,
 					header: () => <BackHeader title="Convidar Bros" />,

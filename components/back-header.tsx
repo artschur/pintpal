@@ -30,7 +30,7 @@ export function BackHeader({
 
 	return (
 		<View
-			className="bg-neutral-950 border-b border-neutral-800 px-6 pb-4"
+			className="bg-neutral-950 w-full border-b border-neutral-800 px-6 pb-4"
 			style={{ paddingTop: insets.top + 16 }}
 		>
 			<View className="flex-row items-center justify-between">

@@ -54,6 +54,7 @@ export async function createGroup(
 		Group,
 		"id" | "created_at" | "invite_token" | "invite_active" | "member_limit"
 	>,
+	userId: string,
 ): Promise<Group> {
 	const { data, error } = await supabase
 		.from("groups")
@@ -65,7 +66,21 @@ export async function createGroup(
 		.select()
 		.single();
 
-	if (error) throw error;
+	const { data: memberData, error: memberError } = await supabase
+		.from("group_members")
+		.insert({
+			group_id: data.id,
+			profile_id: userId,
+			role: "admin",
+			points: 0,
+		})
+		.select()
+		.single();
+
+	if (error || memberError) {
+		throw error || memberError;
+	}
+
 	return data;
 }
 

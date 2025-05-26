@@ -32,14 +32,17 @@ export default function CreateGroupPage() {
 				throw new Error("User not authenticated");
 			}
 
-			const newGroup = await createGroup({
-				name: name.trim(),
-				description: description.trim() || "",
-				created_by: session.user.id,
-			});
+			const newGroup = await createGroup(
+				{
+					name: name.trim(),
+					description: description.trim() || "",
+					created_by: session.user.id,
+				},
+				session.user.id,
+			);
 
 			// Navigate to invite page after successful creation
-			router.push(`/group/${newGroup.id}/invite`);
+			router.push(`/group/invite/${newGroup.id}`);
 		} catch (error: any) {
 			console.error("Error creating group:", error);
 			Alert.alert("Error", error.message || "Failed to create group.");

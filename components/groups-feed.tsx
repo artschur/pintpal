@@ -125,9 +125,18 @@ export default function GroupFeed() {
 			});
 
 			if (reset) {
-				setDiscoverGroups(result.groups);
+				setDiscoverGroups(
+					result.groups.filter(
+						(g) => !g.members.some((u) => u.profile_id === session?.user.id),
+					),
+				);
 			} else {
-				setDiscoverGroups((prev) => [...prev, ...result.groups]);
+				setDiscoverGroups((prev) => [
+					...prev,
+					...result.groups.filter(
+						(g) => !g.members.some((u) => u.id === session?.user.id),
+					),
+				]);
 			}
 
 			setPagination({
@@ -302,10 +311,19 @@ export default function GroupFeed() {
 												className="mr-[-12px]"
 												style={{ zIndex: 10 - index }}
 											>
-												<View className="w-9 h-9 bg-neutral-700 rounded-full border-2 border-neutral-950 items-center justify-center">
-													<Text className="text-white text-sm">
-														{member.profiles.username.charAt(0).toUpperCase()}
-													</Text>
+												<View className="w-9 h-9 bg-neutral-700 rounded-full border-2 border-neutral-950 overflow-hidden items-center justify-center">
+													{member.profiles.avatar_url ? (
+														<Image
+															source={{ uri: member.profiles.avatar_url }}
+															className="w-full h-full"
+														/>
+													) : (
+														<Text className="text-white text-sm font-semibold">
+															{member.profiles.username
+																?.charAt(0)
+																.toUpperCase() || "U"}
+														</Text>
+													)}
 												</View>
 											</View>
 										))}

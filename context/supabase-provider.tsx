@@ -55,9 +55,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
 		if (data.session) {
 			setSession(data.session);
-			console.log("User signed up:", data.user);
 		} else {
-			console.log("No user returned from sign up");
 		}
 	};
 
@@ -74,9 +72,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
 		if (data.session) {
 			setSession(data.session);
-			console.log("User signed in:", data.user);
 		} else {
-			console.log("No user returned from sign in");
 		}
 	};
 
@@ -87,7 +83,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
 			console.error("Error signing out:", error);
 			return;
 		} else {
-			console.log("User signed out");
 		}
 	};
 
@@ -129,10 +124,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
 					pathname !== "/sign-in" &&
 					pathname !== "/sign-up"
 				) {
-					console.log(
-						"No session, redirecting to welcome. Current path:",
-						pathname,
-					);
 					router.replace("/welcome");
 				}
 			}

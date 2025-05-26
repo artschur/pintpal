@@ -222,6 +222,5 @@ export async function GetGroupPints(groupId: string) {
 		console.error("Error fetching group pints:", error);
 		return [];
 	}
-	console.log(data);
 	return data;
 }

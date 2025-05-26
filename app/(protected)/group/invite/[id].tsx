@@ -28,7 +28,6 @@ export default function GroupInvitePage() {
 	const { id: groupId } = useLocalSearchParams<{ id: string }>();
 	const router = useRouter();
 
-	console.log(groupId);
 	const [group, setGroup] = useState<Group | null>(null);
 	const [members, setMembers] = useState<GroupMemberWithProfile[]>([]);
 	const [username, setUsername] = useState("");
@@ -63,7 +62,6 @@ export default function GroupInvitePage() {
 	const generateInviteLink = async () => {
 		try {
 			const link = await createInviteLink(groupId!);
-			console.log(link);
 			setInviteLink(link);
 		} catch (error) {
 			console.error("Error generating invite link:", error);

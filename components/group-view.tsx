@@ -8,6 +8,8 @@ import {
 	TouchableOpacity,
 	Dimensions,
 	FlatList,
+	Modal,
+	StatusBar,
 } from "react-native";
 import { Image } from "expo-image";
 import { Text } from "@/components/ui/text";
@@ -19,7 +21,7 @@ import {
 	getGroupById,
 } from "@/queries/groups";
 import { GetGroupPints } from "@/queries/pints";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { BlurView } from "expo-blur";
 
@@ -40,7 +42,7 @@ interface GroupPost {
 	};
 }
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 const imageSize = (width - 60) / 3; // 3 images per row with padding
 
 export default function GroupView({ groupId }: Props) {
@@ -49,6 +51,8 @@ export default function GroupView({ groupId }: Props) {
 	const [members, setMembers] = useState<GroupMemberWithProfile[]>([]);
 	const [posts, setPosts] = useState<GroupPost[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [selectedPost, setSelectedPost] = useState<GroupPost | null>(null);
+	const [modalVisible, setModalVisible] = useState(false);
 	const router = useRouter();
 
 	useEffect(() => {
@@ -84,6 +88,16 @@ export default function GroupView({ groupId }: Props) {
 		(a, b) => (b.points || 0) - (a.points || 0),
 	);
 
+	const openImageModal = (post: GroupPost) => {
+		setSelectedPost(post);
+		setModalVisible(true);
+	};
+
+	const closeImageModal = () => {
+		setModalVisible(false);
+		setSelectedPost(null);
+	};
+
 	const renderPostImage = ({ item }: { item: GroupPost }) => {
 		const images = item.image_url.split(",");
 		const mainImage = images[0]; // Use the first image (drink photo)
@@ -91,6 +105,8 @@ export default function GroupView({ groupId }: Props) {
 		return (
 			<TouchableOpacity
 				style={{ width: imageSize, height: imageSize, margin: 5 }}
+				onPress={() => openImageModal(item)}
+				activeOpacity={0.8}
 			>
 				<Image
 					source={{ uri: mainImage }}
@@ -139,6 +155,210 @@ export default function GroupView({ groupId }: Props) {
 					)}
 				</View>
 			</TouchableOpacity>
+		);
+	};
+
+	const renderImageModal = () => {
+		if (!selectedPost) return null;
+
+		const images = selectedPost.image_url.split(",");
+		const drinkImage = images[0];
+		const selfieImage = images[1];
+
+		return (
+			<Modal
+				visible={modalVisible}
+				transparent={true}
+				animationType="fade"
+				onRequestClose={closeImageModal}
+			>
+				<StatusBar barStyle="light-content" backgroundColor="rgba(0,0,0,0.9)" />
+				<View
+					style={{
+						flex: 1,
+						backgroundColor: "rgba(0,0,0,0.95)",
+						justifyContent: "center",
+						alignItems: "center",
+					}}
+				>
+					{/* Close Button */}
+					<TouchableOpacity
+						style={{
+							position: "absolute",
+							top: 60,
+							right: 20,
+							zIndex: 10,
+							width: 40,
+							height: 40,
+							borderRadius: 20,
+							backgroundColor: "rgba(0,0,0,0.6)",
+							justifyContent: "center",
+							alignItems: "center",
+						}}
+						onPress={closeImageModal}
+					>
+						<Ionicons name="close" size={24} color="white" />
+					</TouchableOpacity>
+
+					{/* Main Image */}
+					<View
+						style={{
+							width: width - 40,
+							height: height * 0.6,
+							borderRadius: 16,
+							overflow: "hidden",
+						}}
+					>
+						<Image
+							source={{ uri: drinkImage }}
+							style={{ width: "100%", height: "100%" }}
+							contentFit="contain"
+						/>
+					</View>
+
+					{/* Selfie Image (if exists) */}
+					{selfieImage && (
+						<View
+							style={{
+								position: "absolute",
+								top: 100,
+								right: 40,
+								width: 120,
+								height: 120,
+								borderRadius: 16,
+								overflow: "hidden",
+								borderWidth: 3,
+								borderColor: "white",
+							}}
+						>
+							<Image
+								source={{ uri: selfieImage }}
+								style={{ width: "100%", height: "100%" }}
+								contentFit="cover"
+							/>
+						</View>
+					)}
+
+					{/* Post Info */}
+					<BlurView
+						intensity={80}
+						tint="dark"
+						style={{
+							position: "absolute",
+							bottom: 60,
+							left: 20,
+							right: 20,
+							borderRadius: 20,
+							overflow: "hidden",
+						}}
+					>
+						<View style={{ padding: 20 }}>
+							{/* User Info */}
+							<View
+								style={{
+									flexDirection: "row",
+									alignItems: "center",
+									marginBottom: 12,
+								}}
+							>
+								<View
+									style={{
+										width: 40,
+										height: 40,
+										borderRadius: 20,
+										overflow: "hidden",
+										marginRight: 12,
+										backgroundColor: "#374151",
+									}}
+								>
+									{selectedPost.profiles?.avatar_url ? (
+										<Image
+											source={{ uri: selectedPost.profiles.avatar_url }}
+											style={{ width: "100%", height: "100%" }}
+											contentFit="cover"
+										/>
+									) : (
+										<View
+											style={{
+												width: "100%",
+												height: "100%",
+												justifyContent: "center",
+												alignItems: "center",
+											}}
+										>
+											<Text
+												style={{
+													color: "white",
+													fontSize: 16,
+													fontWeight: "600",
+												}}
+											>
+												{selectedPost.profiles?.username
+													?.charAt(0)
+													.toUpperCase() || "U"}
+											</Text>
+										</View>
+									)}
+								</View>
+								<View>
+									<Text
+										style={{
+											color: "white",
+											fontSize: 16,
+											fontWeight: "600",
+										}}
+									>
+										@{selectedPost.profiles?.username}
+									</Text>
+									<Text style={{ color: "#9CA3AF", fontSize: 12 }}>
+										{new Date(selectedPost.created_at).toLocaleDateString(
+											"pt-BR",
+											{
+												day: "2-digit",
+												month: "2-digit",
+												year: "numeric",
+												hour: "2-digit",
+												minute: "2-digit",
+											},
+										)}
+									</Text>
+								</View>
+							</View>
+
+							{/* Description */}
+							<Text
+								style={{
+									color: "white",
+									fontSize: 16,
+									marginBottom: 8,
+									fontWeight: "500",
+								}}
+							>
+								{selectedPost.description}
+							</Text>
+
+							{/* Location */}
+							<View
+								style={{
+									flexDirection: "row",
+									alignItems: "center",
+								}}
+							>
+								<MaterialIcons name="location-on" size={16} color="#FBBF24" />
+								<Text
+									style={{
+										color: "#9CA3AF",
+										fontSize: 14,
+										marginLeft: 4,
+									}}
+								>
+									{selectedPost.location}
+								</Text>
+							</View>
+						</View>
+					</BlurView>
+				</View>
+			</Modal>
 		);
 	};
 
@@ -325,143 +545,150 @@ export default function GroupView({ groupId }: Props) {
 	}
 
 	return (
-		<ScrollView style={{ flex: 1, backgroundColor: "#0A0A0A" }}>
-			{/* Group Header */}
-			<BlurView
-				intensity={20}
-				tint="dark"
-				style={{
-					margin: 20,
-					marginTop: 40,
-					borderRadius: 20,
-					overflow: "hidden",
-					borderWidth: 1,
-					borderColor: "rgba(255, 255, 255, 0.1)",
-				}}
-			>
-				<View style={{ padding: 20, alignItems: "center" }}>
-					{/* Group Icon */}
+		<>
+			<ScrollView style={{ flex: 1, backgroundColor: "#0A0A0A" }}>
+				{/* Group Header */}
+				<BlurView
+					intensity={20}
+					tint="dark"
+					style={{
+						margin: 20,
+						marginTop: 40,
+						borderRadius: 20,
+						overflow: "hidden",
+						borderWidth: 1,
+						borderColor: "rgba(255, 255, 255, 0.1)",
+					}}
+				>
+					<View style={{ padding: 20, alignItems: "center" }}>
+						{/* Group Icon */}
+						<View
+							style={{
+								width: 80,
+								height: 80,
+								borderRadius: 20,
+								backgroundColor: "#FBBF24",
+								justifyContent: "center",
+								alignItems: "center",
+								marginBottom: 16,
+							}}
+						>
+							<Text style={{ fontSize: 40 }}>🍻</Text>
+						</View>
+
+						{/* Group Name */}
+						<Text
+							style={{
+								color: "white",
+								fontSize: 24,
+								fontWeight: "700",
+								textAlign: "center",
+								marginBottom: 8,
+							}}
+						>
+							{group.name}
+						</Text>
+
+						{/* Member Count */}
+						<View
+							style={{
+								backgroundColor: "rgba(251, 191, 36, 0.2)",
+								borderWidth: 1,
+								borderColor: "rgba(251, 191, 36, 0.3)",
+								borderRadius: 20,
+								paddingHorizontal: 12,
+								paddingVertical: 6,
+								marginBottom: 12,
+							}}
+						>
+							<Text
+								style={{ color: "#FBBF24", fontSize: 14, fontWeight: "600" }}
+							>
+								{members.length} membros
+							</Text>
+						</View>
+
+						{/* Description */}
+						{group.description && (
+							<Text
+								style={{
+									color: "#D1D5DB",
+									fontSize: 14,
+									textAlign: "center",
+									lineHeight: 20,
+								}}
+							>
+								{group.description}
+							</Text>
+						)}
+					</View>
+				</BlurView>
+
+				{/* Photos Grid */}
+				{posts.length > 0 && (
+					<View style={{ marginHorizontal: 20, marginBottom: 20 }}>
+						<Text
+							style={{
+								color: "white",
+								fontSize: 20,
+								fontWeight: "700",
+								marginBottom: 16,
+							}}
+						>
+							📸 Fotos do Grupo
+						</Text>
+						<FlatList
+							data={posts}
+							renderItem={renderPostImage}
+							numColumns={3}
+							scrollEnabled={false}
+							showsVerticalScrollIndicator={false}
+							contentContainerStyle={{ paddingBottom: 10 }}
+						/>
+					</View>
+				)}
+
+				{/* Leaderboard */}
+				<View style={{ marginHorizontal: 20, marginBottom: 40 }}>
 					<View
 						style={{
-							width: 80,
-							height: 80,
-							borderRadius: 20,
-							backgroundColor: "#FBBF24",
-							justifyContent: "center",
+							flexDirection: "row",
 							alignItems: "center",
 							marginBottom: 16,
 						}}
 					>
-						<Text style={{ fontSize: 40 }}>🍻</Text>
-					</View>
-
-					{/* Group Name */}
-					<Text
-						style={{
-							color: "white",
-							fontSize: 24,
-							fontWeight: "700",
-							textAlign: "center",
-							marginBottom: 8,
-						}}
-					>
-						{group.name}
-					</Text>
-
-					{/* Member Count */}
-					<View
-						style={{
-							backgroundColor: "rgba(251, 191, 36, 0.2)",
-							borderWidth: 1,
-							borderColor: "rgba(251, 191, 36, 0.3)",
-							borderRadius: 20,
-							paddingHorizontal: 12,
-							paddingVertical: 6,
-							marginBottom: 12,
-						}}
-					>
-						<Text style={{ color: "#FBBF24", fontSize: 14, fontWeight: "600" }}>
-							{members.length} membros
-						</Text>
-					</View>
-
-					{/* Description */}
-					{group.description && (
 						<Text
 							style={{
-								color: "#D1D5DB",
-								fontSize: 14,
-								textAlign: "center",
-								lineHeight: 20,
+								color: "white",
+								fontSize: 20,
+								fontWeight: "700",
+								flex: 1,
 							}}
 						>
-							{group.description}
+							🏆 Leaderboard
 						</Text>
+						<View
+							style={{
+								backgroundColor: "#374151",
+								paddingHorizontal: 8,
+								paddingVertical: 4,
+								borderRadius: 12,
+							}}
+						>
+							<Text style={{ color: "#D1D5DB", fontSize: 12 }}>
+								{members.length} bros
+							</Text>
+						</View>
+					</View>
+
+					{sortedMembers.map((member, index) =>
+						renderLeaderboardItem(member, index),
 					)}
 				</View>
-			</BlurView>
+			</ScrollView>
 
-			{/* Photos Grid */}
-			{posts.length > 0 && (
-				<View style={{ marginHorizontal: 20, marginBottom: 20 }}>
-					<Text
-						style={{
-							color: "white",
-							fontSize: 20,
-							fontWeight: "700",
-							marginBottom: 16,
-						}}
-					>
-						📸 Fotos do Grupo
-					</Text>
-					<FlatList
-						data={posts}
-						renderItem={renderPostImage}
-						numColumns={3}
-						scrollEnabled={false}
-						showsVerticalScrollIndicator={false}
-						contentContainerStyle={{ paddingBottom: 10 }}
-					/>
-				</View>
-			)}
-
-			{/* Leaderboard */}
-			<View style={{ marginHorizontal: 20, marginBottom: 40 }}>
-				<View
-					style={{
-						flexDirection: "row",
-						alignItems: "center",
-						marginBottom: 16,
-					}}
-				>
-					<Text
-						style={{
-							color: "white",
-							fontSize: 20,
-							fontWeight: "700",
-							flex: 1,
-						}}
-					>
-						🏆 Leaderboard
-					</Text>
-					<View
-						style={{
-							backgroundColor: "#374151",
-							paddingHorizontal: 8,
-							paddingVertical: 4,
-							borderRadius: 12,
-						}}
-					>
-						<Text style={{ color: "#D1D5DB", fontSize: 12 }}>
-							{members.length} bros
-						</Text>
-					</View>
-				</View>
-
-				{sortedMembers.map((member, index) =>
-					renderLeaderboardItem(member, index),
-				)}
-			</View>
-		</ScrollView>
+			{/* Image Modal */}
+			{renderImageModal()}
+		</>
 	);
 }
