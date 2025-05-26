@@ -280,7 +280,7 @@ export default function GroupFeed() {
 						</Text>
 					</View>
 					<Text className="text-neutral-400 text-sm">
-						{pagination.total} grupos
+						{discoverGroups.length} grupos
 					</Text>
 				</View>
 

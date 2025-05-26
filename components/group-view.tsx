@@ -24,6 +24,7 @@ import { GetGroupPints } from "@/queries/pints";
 import { MaterialIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { BlurView } from "expo-blur";
+import { renderLeaderboardItem } from "./leaderboard-item";
 
 interface Props {
 	groupId: string;
@@ -107,6 +108,7 @@ export default function GroupView({ groupId }: Props) {
 				style={{ width: imageSize, height: imageSize, margin: 5 }}
 				onPress={() => openImageModal(item)}
 				activeOpacity={0.8}
+				className="border border-neutral-800 rounded-xl"
 			>
 				<Image
 					source={{ uri: mainImage }}
@@ -362,151 +364,6 @@ export default function GroupView({ groupId }: Props) {
 		);
 	};
 
-	const renderLeaderboardItem = (
-		member: GroupMemberWithProfile,
-		index: number,
-	) => {
-		const isTopThree = index < 3;
-		const medals = ["🥇", "🥈", "🥉"];
-
-		return (
-			<BlurView
-				key={member.id}
-				intensity={20}
-				tint="dark"
-				style={{
-					borderRadius: 16,
-					overflow: "hidden",
-					marginBottom: 12,
-					borderWidth: isTopThree ? 2 : 1,
-					borderColor: isTopThree ? "#FBBF24" : "rgba(255, 255, 255, 0.1)",
-				}}
-			>
-				<View
-					style={{ padding: 16, flexDirection: "row", alignItems: "center" }}
-				>
-					{/* Rank */}
-					<View
-						style={{
-							width: 40,
-							height: 40,
-							borderRadius: 20,
-							backgroundColor: isTopThree ? "#FBBF24" : "#374151",
-							justifyContent: "center",
-							alignItems: "center",
-							marginRight: 12,
-						}}
-					>
-						{isTopThree ? (
-							<Text style={{ fontSize: 20 }}>{medals[index]}</Text>
-						) : (
-							<Text
-								style={{
-									color: "white",
-									fontWeight: "700",
-									fontSize: 16,
-								}}
-							>
-								{index + 1}
-							</Text>
-						)}
-					</View>
-
-					{/* Avatar */}
-					<View
-						style={{
-							width: 50,
-							height: 50,
-							borderRadius: 25,
-							overflow: "hidden",
-							marginRight: 12,
-							borderWidth: 2,
-							borderColor: isTopThree ? "#FBBF24" : "#374151",
-						}}
-					>
-						{member.profiles.avatar_url ? (
-							<Image
-								source={{ uri: member.profiles.avatar_url }}
-								style={{ width: "100%", height: "100%" }}
-								contentFit="cover"
-							/>
-						) : (
-							<View
-								style={{
-									width: "100%",
-									height: "100%",
-									backgroundColor: "#374151",
-									justifyContent: "center",
-									alignItems: "center",
-								}}
-							>
-								<Text
-									style={{ color: "white", fontSize: 18, fontWeight: "600" }}
-								>
-									{member.profiles.username.charAt(0).toUpperCase()}
-								</Text>
-							</View>
-						)}
-					</View>
-
-					{/* User Info */}
-					<View style={{ flex: 1 }}>
-						<Text
-							style={{
-								color: "white",
-								fontSize: 16,
-								fontWeight: "600",
-								marginBottom: 2,
-							}}
-						>
-							@{member.profiles.username}
-						</Text>
-						<Text style={{ color: "#9CA3AF", fontSize: 12 }}>
-							{member.role === "admin" ? "Admin" : "Membro"}
-						</Text>
-					</View>
-
-					{/* Points */}
-					<View
-						style={{
-							backgroundColor: "#FBBF24",
-							paddingHorizontal: 12,
-							paddingVertical: 6,
-							borderRadius: 20,
-							alignItems: "center",
-						}}
-					>
-						<Text
-							style={{
-								color: "black",
-								fontWeight: "700",
-								fontSize: 14,
-							}}
-						>
-							{member.points || 0}
-						</Text>
-						<Text
-							style={{
-								color: "black",
-								fontSize: 10,
-								fontWeight: "500",
-							}}
-						>
-							pts
-						</Text>
-					</View>
-
-					{/* Admin Badge */}
-					{member.role === "admin" && (
-						<View style={{ marginLeft: 8 }}>
-							<MaterialIcons name="star" size={20} color="#FBBF24" />
-						</View>
-					)}
-				</View>
-			</BlurView>
-		);
-	};
-
 	if (loading) {
 		return (
 			<View
@@ -668,8 +525,8 @@ export default function GroupView({ groupId }: Props) {
 							🏆 Leaderboard
 						</Text>
 						<View
+							className="bg-neutral-900 border border-neutral-800"
 							style={{
-								backgroundColor: "#374151",
 								paddingHorizontal: 8,
 								paddingVertical: 4,
 								borderRadius: 12,
